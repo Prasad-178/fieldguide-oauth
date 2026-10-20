@@ -1,0 +1,181 @@
+{
+  "appName": "Linear",
+  "officialWebsite": "https://linear.app",
+  "status": "documented",
+  "summary": "This guide outlines the steps to set up an OAuth 2.0 application for Linear to read issues from a user's workspace, covering application registration, user authorization, token exchange, and API requests.",
+  "effort": {
+    "handsOn": "Estimate: 30-60 min; assumes an existing backend for handling redirects and token exchange.",
+    "waiting": "Not published / not confirmed",
+    "basis": "Based on typical OAuth application setup and integration timeframes, assuming developer familiarity with OAuth flows.",
+    "sourceIds": [
+      1
+    ]
+  },
+  "prerequisites": [
+    {
+      "title": "Linear Account",
+      "detail": "A Linear account is required to create and manage OAuth applications.",
+      "sourceIds": [
+        1
+      ]
+    },
+    {
+      "title": "Backend Server",
+      "detail": "A backend server capable of handling OAuth redirects and securely storing client secrets is necessary for the authorization code flow.",
+      "sourceIds": [
+        1
+      ]
+    }
+  ],
+  "permissions": [
+    {
+      "name": "read",
+      "reason": "This scope grants read access to the user's account, which is necessary to read issues from their workspace. It is a default scope.",
+      "sourceIds": [
+        1
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "kind": "setup",
+      "title": "Register OAuth Application",
+      "action": "Create a new OAuth2 application in Linear's developer settings.",
+      "detail": "Navigate to your Linear developer settings and register a new OAuth2 application. You will need to provide an application name and a redirect URI. This process will provide you with a `client_id` and `client_secret`.",
+      "actor": "you",
+      "evidence": "documented",
+      "destination": "Linear Developer Settings",
+      "url": "https://linear.app/settings/api",
+      "successCheck": "You have obtained a `client_id` and `client_secret` for your application.",
+      "recovery": "If you encounter issues, review the Linear OAuth documentation or check your application settings for errors.",
+      "sourceIds": [
+        1
+      ]
+    },
+    {
+      "kind": "setup",
+      "title": "Configure Redirect URI",
+      "action": "Set up your application's redirect URI.",
+      "detail": "Ensure the `redirect_uri` configured in your Linear OAuth application matches the endpoint on your server that will handle the authorization code. This URI must be HTTPS.",
+      "actor": "you",
+      "evidence": "documented",
+      "destination": "Linear Developer Settings",
+      "url": "https://linear.app/settings/api",
+      "successCheck": "The redirect URI is correctly configured in Linear and on your server.",
+      "recovery": "Verify the redirect URI in your Linear app settings and ensure your server endpoint is correctly configured to receive the authorization code.",
+      "sourceIds": [
+        1
+      ]
+    },
+    {
+      "kind": "connect",
+      "title": "Initiate User Authorization",
+      "action": "Redirect users to Linear's authorization URL.",
+      "detail": "Construct an authorization URL using your `client_id`, `redirect_uri`, `response_type=code`, and `scope=read`. Redirect your users to `https://linear.app/oauth/authorize`. Include a `state` parameter for CSRF protection.",
+      "actor": "both",
+      "evidence": "documented",
+      "destination": "Linear Authorization Endpoint",
+      "url": "",
+      "successCheck": "The user is redirected to Linear's consent screen and, upon approval, back to your `redirect_uri` with an authorization `code`.",
+      "recovery": "Check your authorization URL parameters for correctness. Ensure the `redirect_uri` is registered and accessible.",
+      "sourceIds": [
+        1
+      ]
+    },
+    {
+      "kind": "connect",
+      "title": "Exchange Code for Tokens",
+      "action": "Exchange the authorization code for an access token.",
+      "detail": "Upon receiving the authorization `code` at your `redirect_uri`, make a POST request to `https://api.linear.app/oauth/token`. Include the `code`, `redirect_uri`, `client_id`, `client_secret`, and `grant_type=authorization_code` in the request body. This will return an `access_token` and `refresh_token`.",
+      "actor": "agent",
+      "evidence": "documented",
+      "destination": "Linear Token Endpoint",
+      "url": "",
+      "successCheck": "Your server successfully receives an `access_token` and `refresh_token`.",
+      "recovery": "Verify all parameters in your POST request. Ensure your `client_secret` is correct and securely handled. Check server logs for any errors from Linear's token endpoint.",
+      "sourceIds": [
+        1
+      ]
+    },
+    {
+      "kind": "test",
+      "title": "Read User Issues",
+      "action": "Make an API request to read issues using the access token.",
+      "detail": "Use the obtained `access_token` to make a GraphQL API request to `https://api.linear.app/graphql`. Include the token in the `Authorization` header as `Bearer <ACCESS_TOKEN>`. First, query the `viewer` to confirm authentication, then query for team IDs, and finally fetch issues for a specific team.",
+      "actor": "agent",
+      "evidence": "documented",
+      "destination": "Linear GraphQL API",
+      "url": "",
+      "successCheck": "You successfully retrieve issue data from the user's workspace.",
+      "recovery": "If the API request fails, check the `access_token` for validity and expiration. Ensure the `Authorization` header is correctly formatted. Review Linear's GraphQL API documentation for query syntax.",
+      "sourceIds": [
+        1,
+        3
+      ]
+    },
+    {
+      "kind": "launch",
+      "title": "Switch Application Distribution to Public",
+      "action": "Change your application's distribution setting to 'public'.",
+      "detail": "By default, Linear OAuth applications are private and only work within the workspace where they were created. To make your application available to other workspaces, you must switch its distribution to `public`.",
+      "actor": "you",
+      "evidence": "documented",
+      "destination": "Linear OAuth App Manifests",
+      "url": "https://linear.app/developers/oauth-app-manifests",
+      "successCheck": "Your application's distribution status is set to 'public'.",
+      "recovery": "If you cannot find the setting, consult Linear's developer documentation or support. Ensure you are in the correct developer settings for your application.",
+      "sourceIds": [
+        2,
+        4
+      ]
+    }
+  ],
+  "blockers": [],
+  "unknowns": [
+    "The documentation does not specify any review or approval process for public applications.",
+    "There is no information on test users or specific guidance for setting up callback URLs beyond providing the `redirect_uri`.",
+    "The documentation does not detail common failure recovery scenarios beyond basic token expiration."
+  ],
+  "agentBrief": "Set up a Linear OAuth 2.0 application to read user issues. You will need to register an application in Linear's developer settings (https://linear.app/settings/api) to obtain a `client_id` and `client_secret`. Configure a `redirect_uri` on your backend to handle the authorization code. The user will be redirected to `https://linear.app/oauth/authorize` for consent. Your backend will then exchange the received code for an `access_token` at `https://api.linear.app/oauth/token`. Finally, use this token to make GraphQL API calls to `https://api.linear.app/graphql` to read issues. Remember to switch the application's distribution to 'public' (https://linear.app/developers/oauth-app-manifests) for broader availability. Human authorization is required for application registration and any account changes.",
+  "version": 1,
+  "request": {
+    "query": "Linear",
+    "useCase": "Read issues from a user workspace",
+    "audience": "public",
+    "auth": "own"
+  },
+  "generatedAt": "2026-10-20T12:22:22.147Z",
+  "sources": [
+    {
+      "id": 1,
+      "title": "OAuth 2.0 authentication",
+      "url": "https://linear.app/developers/oauth-2-0-authentication",
+      "evidence": "search-excerpt"
+    },
+    {
+      "id": 2,
+      "title": "OAuth application manifests",
+      "url": "https://linear.app/developers/oauth-app-manifests",
+      "evidence": "search-excerpt"
+    },
+    {
+      "id": 3,
+      "title": "Getting started",
+      "url": "https://linear.app/developers/graphql",
+      "evidence": "search-excerpt"
+    },
+    {
+      "id": 4,
+      "title": "Linear configuration - Apideck",
+      "url": "https://developers.apideck.com/apis/issue-tracking/linear/configuration",
+      "evidence": "search-excerpt"
+    }
+  ],
+  "run": {
+    "model": "google/gemini-2.5-flash",
+    "searches": 1,
+    "toolCalls": 2,
+    "costUsd": 0.0176987,
+    "durationMs": 20285
+  }
+}

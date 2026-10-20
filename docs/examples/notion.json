@@ -1,0 +1,193 @@
+{
+  "appName": "Notion",
+  "officialWebsite": "https://www.notion.so/",
+  "status": "documented",
+  "summary": "This guide outlines the OAuth setup for a Notion public connection to read user-selected pages, covering application registration, user authorization, and token exchange. It emphasizes server-side handling of secrets for security.",
+  "effort": {
+    "handsOn": "Estimate: 1-2 hours; assumes an existing backend for token exchange.",
+    "waiting": "Not published / not confirmed",
+    "basis": "Based on documented steps for creating a connection and implementing the OAuth flow. Assumes familiarity with server-side development.",
+    "sourceIds": [
+      1,
+      2,
+      4
+    ]
+  },
+  "prerequisites": [
+    {
+      "title": "Notion Account",
+      "detail": "You need a Notion account to access the Developer portal and create a new connection.",
+      "sourceIds": [
+        2
+      ]
+    },
+    {
+      "title": "Backend Server",
+      "detail": "A server-side application is required to securely exchange the authorization code for an access token and to store your client secret.",
+      "sourceIds": [
+        1,
+        4
+      ]
+    },
+    {
+      "title": "Redirect URI",
+      "detail": "You must have a publicly accessible HTTPS URL where Notion can redirect users after authorization.",
+      "sourceIds": [
+        1,
+        2
+      ]
+    }
+  ],
+  "permissions": [
+    {
+      "name": "read content",
+      "reason": "This permission is necessary to allow your application to read pages selected by the user.",
+      "sourceIds": [
+        2
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "kind": "setup",
+      "title": "Create New Connection",
+      "action": "Create a new connection in the Notion Developer portal.",
+      "detail": "Navigate to the Notion Developer portal and create a new connection. Provide a connection name, select a development workspace, and specify your redirect URI(s). Choose 'Any workspace' or 'Selected workspaces only' for the installation scope. Define 'read content' as a connection capability.",
+      "actor": "you",
+      "evidence": "documented",
+      "destination": "Notion Developer portal",
+      "url": "https://developers.notion.com/guides/get-started/public-connections",
+      "successCheck": "You have successfully created a new connection and obtained a client ID and client secret from the Configuration tab.",
+      "recovery": "Review the Notion documentation for creating public connections if you encounter issues.",
+      "sourceIds": [
+        2
+      ]
+    },
+    {
+      "kind": "setup",
+      "title": "Configure Redirect URI(s)",
+      "action": "Add your application's redirect URI(s) to the connection settings.",
+      "detail": "In your newly created connection's settings, ensure that the redirect URI(s) where Notion will send the authorization code are correctly configured. These must be HTTPS URLs.",
+      "actor": "you",
+      "evidence": "documented",
+      "destination": "Connection settings in Notion Developer portal",
+      "url": "https://developers.notion.com/guides/get-started/public-connections",
+      "successCheck": "Your redirect URI(s) are saved in the connection settings.",
+      "recovery": "Double-check the URL for typos and ensure it's a valid HTTPS endpoint.",
+      "sourceIds": [
+        1,
+        2
+      ]
+    },
+    {
+      "kind": "connect",
+      "title": "Implement Authorization Request",
+      "action": "Direct users to the Notion authorization URL.",
+      "detail": "Construct the authorization URL using your client ID, redirect URI, 'response_type=code', and 'owner=user'. Include a 'state' parameter for CSRF protection. Your application will direct users to this URL to initiate the OAuth flow.",
+      "actor": "both",
+      "evidence": "documented",
+      "destination": "Your application's frontend",
+      "url": "",
+      "successCheck": "Users are successfully redirected to Notion's authorization page when they attempt to connect your application.",
+      "recovery": "Verify the parameters in your authorization URL. Ensure the client ID is correct and the redirect URI matches what's configured in Notion.",
+      "sourceIds": [
+        1
+      ]
+    },
+    {
+      "kind": "connect",
+      "title": "Implement Token Exchange",
+      "action": "Exchange the authorization code for an access token on your server.",
+      "detail": "After a user grants access, Notion redirects them to your `redirect_uri` with a temporary `code`. Your server must capture this `code` and send a `POST` request to `https://api.notion.com/v1/oauth/token`. This request uses HTTP Basic Authentication with your `CLIENT_ID` and `CLIENT_SECRET` (base64 encoded). The request body must be JSON-encoded and include `grant_type: \"authorization_code\"`, the received `code`, and your `redirect_uri` (if required).",
+      "actor": "both",
+      "evidence": "documented",
+      "destination": "Your backend server",
+      "url": "",
+      "successCheck": "Your server successfully receives an `access_token` and `refresh_token` from Notion.",
+      "recovery": "Check server logs for errors during the POST request. Ensure correct HTTP Basic Authentication and JSON body formatting. Verify the `redirect_uri` parameter if multiple are configured.",
+      "sourceIds": [
+        1,
+        3,
+        4
+      ]
+    },
+    {
+      "kind": "test",
+      "title": "Test Page Read Access",
+      "action": "Use the obtained access token to read a Notion page.",
+      "detail": "After successfully obtaining an access token, make an authenticated API request to Notion to read content from a page that the user has granted access to. This confirms your application can perform its intended function.",
+      "actor": "you",
+      "evidence": "recommendation",
+      "destination": "Your backend server / Notion API",
+      "url": "https://developers.notion.com/reference/get-block",
+      "successCheck": "Your application successfully retrieves content from a Notion page using the access token.",
+      "recovery": "If the API call fails, check the access token's validity and the specific API endpoint documentation. Ensure the user has shared the page with your connection.",
+      "sourceIds": [
+        1
+      ]
+    },
+    {
+      "kind": "launch",
+      "title": "Prepare for Distribution",
+      "action": "Review Notion's guidelines for public connections and distribution.",
+      "detail": "While specific approval processes are not detailed, ensure your application adheres to Notion's terms of service and any general guidelines for public connections. Be prepared for potential review processes if they exist.",
+      "actor": "you",
+      "evidence": "documented",
+      "destination": "Notion Developer portal",
+      "url": "https://developers.notion.com/guides/get-started/public-connections",
+      "successCheck": "You have reviewed all available documentation regarding public connections and feel confident about your application's compliance.",
+      "recovery": "If you have concerns, reach out to Notion developer support for clarification on public distribution requirements.",
+      "sourceIds": [
+        2
+      ]
+    }
+  ],
+  "blockers": [],
+  "unknowns": [
+    "Specific details on the application review and approval process for public distribution.",
+    "Published waiting times for application approval or policy checks.",
+    "Whether there are specific guidelines for test users beyond the general OAuth flow."
+  ],
+  "agentBrief": "The user wants to set up OAuth for a Notion application to read user-selected pages. I have documented the steps for creating a public connection, implementing the authorization request, and handling the token exchange. Key information includes: client ID and secret retrieval from the Notion Developer portal, the authorization URL `https://api.notion.com/v1/oauth/authorize`, and the token exchange endpoint `https://api.notion.com/v1/oauth/token`. Emphasize that the client secret must be handled server-side. The 'read content' capability is required. I've noted that specific details on public distribution approval and waiting times are not explicitly documented. The agent should guide the user through these steps, ensuring they understand the security implications of handling client secrets. The user will need to provide their Notion account details for connection creation and have a backend ready for token exchange. URLs: https://developers.notion.com/guides/get-started/authorization, https://developers.notion.com/guides/get-started/public-connections, https://developers.notion.com/guides/get-started/handling-api-keys.",
+  "version": 1,
+  "request": {
+    "query": "Notion",
+    "useCase": "Read pages the user selects",
+    "audience": "test",
+    "auth": "own"
+  },
+  "generatedAt": "2026-10-20T12:23:26.102Z",
+  "sources": [
+    {
+      "id": 1,
+      "title": "Authorization - Notion Docs",
+      "url": "https://developers.notion.com/guides/get-started/authorization",
+      "evidence": "search-excerpt"
+    },
+    {
+      "id": 2,
+      "title": "Public connections - Notion Docs",
+      "url": "https://developers.notion.com/guides/get-started/public-connections",
+      "evidence": "search-excerpt"
+    },
+    {
+      "id": 3,
+      "title": "Create a token - Notion Docs",
+      "url": "https://developers.notion.com/reference/create-a-token",
+      "evidence": "search-excerpt"
+    },
+    {
+      "id": 4,
+      "title": "Secure API credentials - Notion Docs",
+      "url": "https://developers.notion.com/guides/get-started/handling-api-keys",
+      "evidence": "search-excerpt"
+    }
+  ],
+  "run": {
+    "model": "google/gemini-2.5-flash",
+    "searches": 1,
+    "toolCalls": 1,
+    "costUsd": 0.0156775,
+    "durationMs": 18833
+  }
+}
