@@ -38,7 +38,7 @@ Use “Refresh research” within a sample to investigate its current requiremen
 `POST /api/research` validates context, then makes two server-side OpenRouter requests:
 
 1. **Investigate:** the model uses web search/fetch with bounded tool calls. Returned URL annotations form the evidence registry. A run without a reported search or usable source excerpts is rejected.
-2. **Structure:** the model writes a typed guide from those excerpts. Zod checks the response; documented steps and permissions need source references, and a documented guide must include a controlled test and launch check.
+2. **Structure:** the model writes a typed guide from those excerpts. The provider receives a simplified shape schema; Zod enforces the full response bounds afterward; documented steps and permissions need source references, and a documented guide must include a controlled test and launch check.
 
 The client receives real stage changes over NDJSON. There is no fabricated percentage counter. A 150-second timeout, cancellation, input preservation and readable failures support recovery.
 

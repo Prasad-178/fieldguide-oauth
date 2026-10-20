@@ -74,3 +74,13 @@ Replaced text-only route fallbacks with layout-shaped skeletons, including share
 Desktop uses a viewport-height app shell at widths above 900px and heights of at least 600px. Navigation and step actions stay visible; the instruction panel and step list can scroll independently. At 1366 × 768, expanding Slack instructions kept document height at 768. At 1280 × 650, the generated Airtable guide kept document height at 650 and the instructions were keyboard-focusable for Page Down. At 390 × 844, natural page scrolling remained, document width was 390, and the action bar ended at viewport height 844. Shorter desktop windows also fall back to document scrolling to preserve access.
 
 Reduced header height and guide spacing; moved step actions out of animated/scrolling content. Lint and production build passed. These checks do not establish a full accessibility audit.
+
+## Asana provider-format rejection — 21 October 2026
+
+A user request for `asana`, task `read tasks from a user's workspace`, external users, own OAuth app failed. Production request logs contained no upstream diagnostic because the NDJSON stream had already returned HTTP 200 and the caught error was not logged. A direct reproduction captured the actual failure: research returned HTTP 200 and four sources; structured generation returned HTTP 400 from Google AI Studio, rejecting the schema for too many constraint states. This was a request-format bug, not evidence of an invalid app name or exhausted API credits.
+
+The provider schema now retains object structure, required properties, types and enums, but leaves array/string/number limits to the unchanged Zod runtime validator. The generation prompt also specifies size limits. The full guide is still rejected if it violates application bounds or citation rules; no validation was disabled. Provider errors now distinguish rejected requests from temporary service failures, recognize error bodies inside HTTP 200 responses, and log safe stage/status/category diagnostics without prompts, source excerpts, keys or raw upstream payloads.
+
+The same request completed locally after the change: seven steps, four sources, 19.650 seconds and reported cost $0.01916793. Twelve tests passed, including provider schema compatibility, rejection diagnostics, HTTP-200 error handling and runtime rejection of oversized generated guides. Lint and build passed. Earlier live successes were insufficient to detect this provider compatibility failure; a few successful runs are not a reliability estimate.
+
+Implementation reference: [Gemini structured-output limitations](https://ai.google.dev/gemini-api/docs/structured-output); [OpenRouter error formats](https://openrouter.ai/docs/api_reference/errors-and-debugging).
