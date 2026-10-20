@@ -97,3 +97,75 @@ h1:focus{outline:none}
 /* Research titles vary by provider: keep the full next action readable. */
 .research-nav .step-nav-button{height:auto!important;min-height:47px;padding:10px 12px!important;text-align:left;white-space:normal}.research-step-label{line-height:1.45;overflow-wrap:anywhere}.research-nav .step-count{flex-shrink:0}
 @media(max-width:700px){.research-nav .step-nav-button{flex-shrink:0;max-width:270px}.research-nav .step-nav-button.active .research-step-label{max-width:200px}}
+
+/* Compact app chrome; the guide owns its scroll regions on desktop. */
+.site-header{height:64px}
+.site-footer{padding:14px 0;font-size:10px}
+.guide-page{padding:12px 0 14px}
+.guide-header{margin-bottom:16px;gap:16px;align-items:flex-end}
+.guide-back{height:28px!important;margin-bottom:8px;font-size:12px!important}
+.guide-header h1{font-size:27px}
+.launch-strip{margin-bottom:18px}
+.guide-footnote{margin-top:10px;font-size:10px}
+.task-heading{padding:20px 24px 18px}
+.task-heading h2{margin:14px 0 10px;font-size:26px}
+.task-card .diagram{margin:0 24px}
+.task-controls{padding:16px 24px 20px}
+.task-actions{padding:12px 24px;border-top:1px solid var(--border);background:var(--card);flex-shrink:0}
+.task-actions .task-bottom{margin-top:0}
+.task-scroll{min-width:0;outline-offset:-3px;scrollbar-width:thin;scrollbar-color:#d4d4d4 transparent}
+.research-task-card .prerequisites{margin:16px 24px 0;background:var(--muted);border:0}
+.research-summary{margin:0 0 14px;font-size:13px}
+.effort-row{margin-bottom:18px;padding:12px 16px;gap:18px}
+.research-form-page{padding:32px 0 40px}
+
+@media(min-width:901px) and (min-height:600px){
+  .app-shell{height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+  .site-header,.site-footer{flex-shrink:0}
+  .app-shell>main{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+  .app-shell>.guide-main{overflow:hidden}
+  .guide-main>.page-transition{height:100%;min-height:0}
+  .guide-main .guide-page{height:100%;min-height:0;display:flex;flex-direction:column}
+  .guide-page>.guide-header,.guide-page>.launch-strip,.guide-page>.guide-footnote,.guide-page>.research-summary,.guide-page>.effort-row{flex-shrink:0}
+  .guide-main .guide-grid{flex:1;min-height:0;grid-template-rows:minmax(0,1fr);gap:28px}
+  .guide-main .step-nav{min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;padding-right:4px}
+  .guide-main .task-card,.guide-main .task-content,.guide-main .task-article,.guide-main .research-task-card{display:flex;flex-direction:column;flex:1;min-height:0}
+  .guide-main .task-scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain}
+  .guide-main .research-task-stack{min-height:0;display:flex;flex-direction:column}
+  .guide-main .research-secondary{flex-shrink:0;padding-top:6px}
+  .guide-main .nav-footer{margin-top:18px}
+  .guide-main .step-nav>.eyebrow{margin-top:8px;margin-bottom:12px}
+  .guide-main .task-heading h2{font-size:25px}
+  .guide-main .diagram-nodes{padding-top:12px;padding-bottom:8px}
+  .guide-main .diagram-node{width:52px;height:52px;border-radius:14px}
+  .guide-main .connector{top:17px;left:calc(50% + 26px);width:calc(100% - 44px)}
+  .guide-main .diagram-unit{gap:9px}
+  .guide-main .diagram{padding-top:8px;padding-bottom:10px}
+}
+@media(max-width:900px){
+  .guide-header{flex-wrap:wrap;align-items:flex-start;gap:12px}
+  .guide-header>div:last-child{flex-wrap:wrap}
+  .task-scroll{overflow:visible}
+  .task-actions{padding:10px 20px}
+}
+@media(max-width:700px){
+  .guide-page{padding-bottom:92px}
+  .task-actions{border:0;padding:0}
+  .task-heading{padding:20px}
+  .task-card .diagram{margin:0 20px}
+  .task-controls{padding:16px 20px}
+  .research-task-card .prerequisites{margin:16px 20px 0}
+  .guide-header .provider-symbol{width:36px;height:36px}
+}
+
+/* Skeletons reflect the destination layout and never simulate completed work. */
+.skeleton{animation:skeleton-pulse 1.8s ease-in-out infinite}
+@keyframes skeleton-pulse{0%,100%{opacity:1}50%{opacity:.45}}
+.skeleton-home>div> [data-slot=skeleton]{margin-left:auto;margin-right:auto}
+.skeleton-guide-heading{display:flex;flex-direction:column;gap:10px;margin-bottom:16px}
+.loading-strip{margin-bottom:18px;flex-shrink:0}
+.skeleton-task{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:12px;padding:24px;min-height:290px;min-width:0}
+.loading-guide .guide-grid{min-height:0}
+@media(max-width:700px){.skeleton-nav{display:none}.skeleton-guide-heading .w-64{width:180px}.skeleton-task{padding:20px}}
+@media(prefers-reduced-motion:reduce){.skeleton{animation:none}}
+.task-scroll:focus-visible{outline:2px solid #a1a1aa;outline-offset:-3px}

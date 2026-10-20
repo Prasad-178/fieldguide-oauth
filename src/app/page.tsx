@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import Fieldguide from "@/components/fieldguide";
 import { Context, Provider, providers } from "@/lib/guide";
+import PageSkeleton from "@/components/page-skeleton";
 
 type Query = Promise<Record<string, string | string[] | undefined>>;
 
@@ -14,5 +15,5 @@ async function GuideFromQuery({ searchParams }: { searchParams: Query }) {
 }
 
 export default function Page({ searchParams }: { searchParams: Query }) {
-  return <Suspense fallback={<div className="p-10 text-sm text-muted-foreground">Opening your guide…</div>}><GuideFromQuery searchParams={searchParams} /></Suspense>;
+  return <Suspense fallback={<PageSkeleton />}><GuideFromQuery searchParams={searchParams} /></Suspense>;
 }

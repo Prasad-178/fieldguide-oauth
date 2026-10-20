@@ -66,3 +66,11 @@ Vercel's published, active “Research demo limit” rule matches only POST `/ap
 `npm audit --omit=dev` reported zero vulnerabilities. The full audit reported nine high-severity entries arising from a braces stack-exhaustion advisory through development-only ESLint/shadcn tooling. npm suggested incompatible major downgrades; none were forced. These remain open development-tooling advisories, not a clean full-dependency audit. Advisory: https://github.com/advisories/GHSA-vfj7-8cjw-p6xm.
 
 The source repository is private pending the owner's sharing choice. No submission form or email was sent.
+
+## Loading and viewport layout — 21 October 2026
+
+Replaced text-only route fallbacks with layout-shaped skeletons, including shared-snapshot verification. Browser verification temporarily paused the real verification request: the guide skeleton rendered 18 placeholders, announced its loading state, and stopped pulsing under reduced-motion emulation. The request was then resumed and the actual guide rendered.
+
+Desktop uses a viewport-height app shell at widths above 900px and heights of at least 600px. Navigation and step actions stay visible; the instruction panel and step list can scroll independently. At 1366 × 768, expanding Slack instructions kept document height at 768. At 1280 × 650, the generated Airtable guide kept document height at 650 and the instructions were keyboard-focusable for Page Down. At 390 × 844, natural page scrolling remained, document width was 390, and the action bar ended at viewport height 844. Shorter desktop windows also fall back to document scrolling to preserve access.
+
+Reduced header height and guide spacing; moved step actions out of animated/scrolling content. Lint and production build passed. These checks do not establish a full accessibility audit.

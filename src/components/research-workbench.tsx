@@ -13,6 +13,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { savedGuide, type SavedGuide, type ResearchInput } from "@/lib/research/schema";
+import { GuideSkeleton } from "@/components/page-skeleton";
 import { cn } from "@/lib/utils";
 
 function Sources({ids,guide}:{ids:number[];guide:SavedGuide}){return <span className="source-refs">{ids.map(id=>{const s=guide?.sources.find(s=>s.id===id);return s ? <a key={id} href={s.url} target="_blank" rel="noopener noreferrer" aria-label={`Source ${id}: ${s.title}`}>[{id}]</a>:null;})}</span>;}
@@ -104,8 +105,8 @@ export default function ResearchWorkbench({ query = "", useCase = "", audience =
 
   return <div className="app-shell">
     <header className="site-header"><Button asChild variant="ghost" className="brand"><Link href="/"><Waypoints className="size-5"/>fieldguide<span className="brand-dot">.</span></Link></Button><Badge variant="outline" className="gap-2 font-normal"><span className="size-1.5 rounded-full bg-emerald-600"/>{shared ? "Shared guide" : "Live research"}</Badge></header>
-    <main>
-      {phase === "loading" && <div className="research-form-page"><LoaderCircle className="size-6 animate-spin"/><h1 className="mt-5">Opening your guide</h1><p className="lede">Checking the saved snapshot.</p></div>}
+    <main className={phase === "result" || phase === "loading" ? "guide-main" : undefined}>
+      {phase === "loading" && <GuideSkeleton />}
       {phase === "form" && <section className="research-form-page">
         <Button asChild variant="ghost" className="-ml-3 mb-7"><Link href="/"><ArrowLeft/>All apps</Link></Button>
         <div className="mb-5 flex size-12 items-center justify-center rounded-xl border bg-muted"><Search className="size-5"/></div>
@@ -131,22 +132,24 @@ export default function ResearchWorkbench({ query = "", useCase = "", audience =
         <p className="mt-5 text-xs leading-relaxed text-muted-foreground">{elapsed>40 ? "Still working. Some documentation takes longer to retrieve; you can stop and narrow the task." : "We’ll show what we found and what still needs confirmation."}</p>
       </section>}
       {phase === "result" && guide && current && <section className="guide-page">
-        <div className="guide-header"><div><Button variant="ghost" className="-ml-3 mb-3" onClick={()=>{setPhase("form");setError("");}}><ArrowLeft/>Refine research</Button><div className="flex items-center gap-3"><span className="provider-symbol"><Globe2 className="size-5"/></span><div><h1 ref={resultHeading} tabIndex={-1}>{guide.appName} setup</h1><p className="mt-1 text-xs text-muted-foreground">{guide.request.audience === "test" ? "Testing" : "External users"} · {guide.request.auth === "managed" ? "Managed auth" : "Own OAuth app"}</p></div></div></div><Button variant="outline" onClick={shareGuide}><Link2/>Share</Button></div>
+        <div className="guide-header"><div><Button variant="ghost" className="guide-back -ml-3" onClick={()=>{setPhase("form");setError("");}}><ArrowLeft/>Refine research</Button><div className="flex items-center gap-3"><span className="provider-symbol"><Globe2 className="size-5"/></span><div><h1 ref={resultHeading} tabIndex={-1}>{guide.appName} setup</h1><p className="mt-1 text-xs text-muted-foreground">{guide.request.audience === "test" ? "Testing" : "External users"} · {guide.request.auth === "managed" ? "Managed auth" : "Own OAuth app"}</p></div></div></div><Button variant="outline" onClick={shareGuide}><Link2/>Share</Button></div>
         <p className="research-summary">{guide.summary}</p>
         {guide.status!=="documented"&&<div className="launch-strip"><CircleAlert className="size-4 shrink-0"/><span>{guide.status==="needs-clarification" ? "Some details need clarification. Review the open questions before following these steps." : "OAuth setup is not confirmed. This guide explains what to investigate next."}</span></div>}
         <div className="effort-row"><div><Clock3 className="size-4"/><span><span className="metric-label">Hands-on work</span>{guide.effort.handsOn}</span></div><div><ShieldCheck className="size-4"/><span><span className="metric-label">External waiting</span>{guide.effort.waiting}</span></div><Button variant="ghost" size="sm" onClick={()=>openPanel("launch")}>Details<ArrowUpRight/></Button></div>
         <div className="guide-grid"><nav className="step-nav research-nav" aria-label="Research guide steps"><p className="eyebrow">YOUR PATH</p>{guide.steps.map((s,i)=><Button key={i} variant="ghost" className={cn("step-nav-button",step===i&&"active")} aria-label={`Step ${i+1}: ${s.title}`} aria-current={step===i?"step":undefined} onClick={()=>setStep(i)}>{step===i&&<motion.span layoutId="research-step" className="active-step-bg"/>}<span className={cn("step-count",done.includes(i)&&"complete")}>{done.includes(i)?<Check className="size-3.5"/>:i+1}</span><span className="relative research-step-label">{s.title}</span></Button>)}<div className="nav-footer">{done.length} of {guide.steps.length} checked<div className="progress-track"><motion.div animate={{width:`${done.length/guide.steps.length*100}%`}}/></div><p>Your checks · this session</p></div></nav>
         <div className="research-task-stack">
+          <div className="research-task-card"><AnimatePresence mode="wait"><motion.article className="task-article" key={step} initial={{opacity:0,y:reduce?0:10}} animate={{opacity:1,y:0}} exit={{opacity:0}} transition={{duration:.18}}>
+            <div className="task-scroll" role="region" aria-label="Step instructions" tabIndex={0}>
           {step===0&&guide.prerequisites.length>0&&<div className="prerequisites"><p className="eyebrow">BEFORE YOU START</p>{guide.prerequisites.map((p,i)=><p key={i}><Check className="size-3.5 shrink-0"/><span>{p.title}<Sources guide={guide} ids={p.sourceIds}/></span></p>)}</div>}
-          <div className="research-task-card"><AnimatePresence mode="wait"><motion.article key={step} initial={{opacity:0,y:reduce?0:10}} animate={{opacity:1,y:0}} exit={{opacity:0}} transition={{duration:.18}}>
             <div className="task-heading"><div className="flex items-center justify-between gap-3"><span className="eyebrow">STEP {step+1} OF {guide.steps.length}</span><Badge variant="secondary" className="font-normal">{current.actor==="agent"?"Agent can prepare":current.actor==="both"?"Agent + you":"Your action"}</Badge></div><h2>{current.title}</h2><p>{current.action}</p><p className="step-evidence">{current.evidence==="documented" ? "From documentation" : current.evidence==="recommendation" ? "Suggested approach" : "Needs confirmation"}<Sources guide={guide} ids={current.sourceIds}/></p></div>
             <div className="task-controls pt-0">
               {current.url&&<Button variant="outline" asChild><a href={current.url} target="_blank" rel="noopener noreferrer">{current.destination||"Open instructions"}<ArrowUpRight/></a></Button>}
               <Accordion type="single" collapsible className="mt-4"><AccordionItem value="instructions"><AccordionTrigger>Instructions & success check</AccordionTrigger><AccordionContent><p>{current.detail}</p><div className="success-check"><Check className="size-4 shrink-0"/><p>{current.successCheck}</p></div><p className="mt-3"><strong>If blocked:</strong> {current.recovery}</p></AccordionContent></AccordionItem></Accordion>
-              <div className="task-bottom"><Button variant="ghost" onClick={()=>openPanel("sources")}><BookOpen/>Sources</Button><Button onClick={()=>{setDone(v=>[...new Set([...v,step])]);if(step<guide.steps.length-1)setStep(step+1);else openPanel("launch");}}>{step===guide.steps.length-1 ? "Check launch readiness" : done.includes(step) ? "Continue" : "Mark done & continue"}<ArrowRight/></Button></div>
+            </div></div>
+          </motion.article></AnimatePresence><div className="task-actions">
+            <div className="task-bottom"><Button variant="ghost" onClick={()=>openPanel("sources")}><BookOpen/>Sources</Button><Button onClick={()=>{setDone(v=>[...new Set([...v,step])]);if(step<guide.steps.length-1)setStep(step+1);else openPanel("launch");}}>{step===guide.steps.length-1 ? "Check launch readiness" : done.includes(step) ? "Continue" : "Mark done & continue"}<ArrowRight/></Button></div>
               {done.includes(step)&&<Button variant="link" className="mt-2 text-xs" onClick={()=>setDone(v=>v.filter(i=>i!==step))}>Undo completion</Button>}
-            </div>
-          </motion.article></AnimatePresence></div>
+          </div></div>
           <div className="research-secondary"><Button variant="ghost" onClick={()=>openPanel("agent")}><Sparkles/>Agent handoff</Button><Button variant="ghost" onClick={()=>openPanel("launch")}><ShieldCheck/>{guide.blockers.length+guide.unknowns.length ? "Blockers & open questions" : "Launch checks"}</Button></div>
         </div></div>
         <p className="guide-footnote">Researched {new Date(guide.generatedAt).toLocaleDateString()} · {guide.sources.length} sources · setup not performed</p>

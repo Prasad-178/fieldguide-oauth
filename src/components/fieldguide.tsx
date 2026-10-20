@@ -1,9 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useRef, useState, useTransition } from "react";
 import { AnimatePresence, motion, MotionConfig, useReducedMotion } from "motion/react";
-import { ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, CircleAlert, Check, CheckCheck, CircleHelp, Copy, KeyRound, Link2, Play, Search, Settings2, ShieldCheck, Waypoints } from "lucide-react";
+import { ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, CircleAlert, Check, CheckCheck, CircleHelp, Copy, KeyRound, Link2, LoaderCircle, Play, Search, Settings2, ShieldCheck, Waypoints } from "lucide-react";
 import { Icon } from "@iconify/react";
 import brandIcons from "@/lib/brand-icons.json";
 import { Button } from "@/components/ui/button";
@@ -65,6 +65,7 @@ function Diagram({ labels, identity }: { labels: [string, string, string]; ident
 
 export default function Fieldguide({ initialContext, sharedGuide = false }: { initialContext?: Context; sharedGuide?: boolean }) {
   const router = useRouter();
+  const [navigating, startNavigation] = useTransition();
   const [page, setPage] = useState<"home" | "intent" | "guide" | "done">(initialContext ? "guide" : "home");
   const [context, setContext] = useState<Context>(initialContext ?? initial);
   const [query, setQuery] = useState("");
@@ -94,7 +95,7 @@ export default function Fieldguide({ initialContext, sharedGuide = false }: { in
     let host = value;
     try { host = new URL(value.includes("://") ? value : `https://${value}`).hostname.replace(/^www\./, ""); } catch {}
     const id = (Object.keys(providers) as Provider[]).find(id => value === id || host === providers[id].domain || id === "gmail" && host === "mail.google.com");
-    if (id) select(id); else { router.push(`/research?app=${encodeURIComponent(query.trim())}`); }
+    if (id) select(id); else { startNavigation(() => router.push(`/research?app=${encodeURIComponent(query.trim())}`)); }
   }
   function goHome() { window.history.replaceState(null, "", "/"); setPage("home"); setQuery(""); setShared(false); setError(""); }
   function finish() { setDone(previous => [...new Set([...previous, step])]); if (step < allSteps.length - 1) setStep(step + 1); else setPage("done"); }
@@ -109,14 +110,14 @@ export default function Fieldguide({ initialContext, sharedGuide = false }: { in
 
   return <MotionConfig reducedMotion="user"><div className="app-shell">
     <header className="site-header"><Button variant="ghost" className="brand" onClick={goHome}><Waypoints className="size-5" /> fieldguide<span className="brand-dot">.</span></Button><div className="flex items-center gap-2"><Badge variant="secondary" className="font-normal">OAuth setup guides</Badge><Button variant="ghost" size="icon" aria-label="About these guides" onClick={() => openPanel("source")}><CircleHelp /></Button></div></header>
-    <main><AnimatePresence mode="wait"><motion.div key={page} initial={reduce ? false : { opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: reduce ? 0 : -8 }} transition={{ duration: .24 }} onAnimationComplete={() => { if (page !== "home") headingRef.current?.focus({ preventScroll: true }); }}>
+    <main className={page === "guide" ? "guide-main" : undefined}><AnimatePresence mode="wait"><motion.div className="page-transition" key={page} initial={reduce ? false : { opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: reduce ? 0 : -8 }} transition={{ duration: .24 }} onAnimationComplete={() => { if (page !== "home") headingRef.current?.focus({ preventScroll: true }); }}>
       {page === "home" && <section className="lookup-page">
         <Badge variant="outline" className="mb-5 gap-2 text-muted-foreground"><span className="size-1.5 rounded-full bg-emerald-600" /> OAuth, without the guesswork</Badge>
         <h1>Connect an app.<br /><span className="text-muted-foreground">Know the next step.</span></h1>
         <p className="lede">A short setup guide, with approval blockers upfront.</p>
         <div className="lookup-box"><form onSubmit={e => { e.preventDefault(); search(); }} className="space-y-2">
           <Label htmlFor="app-query" className="sr-only">App name or website</Label>
-          <InputGroup className="h-12 shadow-xs"><InputGroupInput ref={searchRef} id="app-query" placeholder="App name or website" value={query} onChange={e => { setQuery(e.target.value); setError(""); }} aria-invalid={!!error} aria-describedby={error ? "search-error" : undefined} autoComplete="off" /><InputGroupAddon><Search className="size-4" /></InputGroupAddon><InputGroupAddon align="inline-end"><Button type="submit" className="h-9 px-4">Find guide <ArrowRight /></Button></InputGroupAddon></InputGroup>
+          <InputGroup className="h-12 shadow-xs"><InputGroupInput ref={searchRef} id="app-query" placeholder="App name or website" value={query} onChange={e => { setQuery(e.target.value); setError(""); }} aria-invalid={!!error} aria-describedby={error ? "search-error" : undefined} autoComplete="off" /><InputGroupAddon><Search className="size-4" /></InputGroupAddon><InputGroupAddon align="inline-end"><Button type="submit" disabled={navigating} aria-busy={navigating} className="h-9 px-4">{navigating ? <><LoaderCircle className="size-4 animate-spin" /> Opening…</> : <>Find guide <ArrowRight /></>}</Button></InputGroupAddon></InputGroup>
           {error && <p id="search-error" role="alert" className="field-error"><CircleAlert aria-hidden="true" /><span>{error}</span></p>}
         </form><div className="sample-apps"><span>Try</span>{(Object.keys(providers) as Provider[]).map(id => <Button key={id} variant="outline" className="h-9 gap-2 rounded-full px-3 font-normal" onClick={() => select(id)}><ProviderIcon id={id} className="mini" />{providers[id].name}</Button>)}</div></div>
         <div className="home-diagram"><Diagram labels={["Create app", "Set permissions", "Test connection"]} identity="home" /></div>
@@ -135,19 +136,20 @@ export default function Fieldguide({ initialContext, sharedGuide = false }: { in
       </section>}
 
       {page === "guide" && <section className="guide-page">
-        <div className="guide-header"><div><Button variant="ghost" className="-ml-3 mb-3 text-muted-foreground" onClick={goHome}><ArrowLeft /> All apps</Button><div className="flex items-center gap-3"><ProviderIcon id={context.provider} /><div><h1 ref={headingRef} tabIndex={-1}>{providers[context.provider].name} setup</h1><p className="mt-1 text-xs text-muted-foreground">{operation(context)} · {context.audience === "test" ? "Testing" : "External users"} · {context.managed ? "Managed auth" : "Own OAuth app"}</p></div></div></div><div className="flex gap-1"><Button variant="ghost" size="icon" aria-label="Edit guide settings" onClick={() => openPanel("settings")}><Settings2 /></Button><Button variant="ghost" asChild><a href={`/research?app=${context.provider}&task=${encodeURIComponent(operation(context))}&audience=${context.audience}&auth=${context.managed?"managed":"own"}`}>Refresh research</a></Button><Button variant="outline" onClick={openShare}><Link2 /> Share</Button></div></div>
+        <div className="guide-header"><div><Button variant="ghost" className="guide-back -ml-3 text-muted-foreground" onClick={goHome}><ArrowLeft /> All apps</Button><div className="flex items-center gap-3"><ProviderIcon id={context.provider} /><div><h1 ref={headingRef} tabIndex={-1}>{providers[context.provider].name} setup</h1><p className="mt-1 text-xs text-muted-foreground">{operation(context)} · {context.audience === "test" ? "Testing" : "External users"} · {context.managed ? "Managed auth" : "Own OAuth app"}</p></div></div></div><div className="flex gap-1"><Button variant="ghost" size="icon" aria-label="Edit guide settings" onClick={() => openPanel("settings")}><Settings2 /></Button><Button variant="ghost" asChild><a href={`/research?app=${context.provider}&task=${encodeURIComponent(operation(context))}&audience=${context.audience}&auth=${context.managed?"managed":"own"}`}>Refresh research</a></Button><Button variant="outline" onClick={openShare}><Link2 /> Share</Button></div></div>
         <div className="launch-strip"><ShieldCheck className="size-4 shrink-0" /><span>{gate(context)}</span><Button variant="link" size="sm" onClick={() => openPanel("launch")}>Details <ArrowUpRight className="size-3" /></Button></div>
         {shared && <p className="mb-4 text-xs text-muted-foreground">Shared guide · personal progress excluded</p>}
         <div className="guide-grid"><nav className="step-nav" aria-label="Setup steps"><p className="eyebrow">YOUR PATH</p>{allSteps.map((s, i) => <Button key={s.short} variant="ghost" onClick={() => setStep(i)} aria-label={`Step ${i + 1}: ${s.short}`} aria-current={step === i ? "step" : undefined} className={cn("step-nav-button", step === i && "active")}>{step === i && <motion.span layoutId="active-step" className="active-step-bg" transition={{ type: "spring", bounce: 0, duration: .4 }} />}<span className={cn("step-count", done.includes(i) && !shared && "complete")}>{done.includes(i) && !shared ? <motion.span initial={{ scale: .25, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}><Check className="size-3.5" /></motion.span> : i + 1}</span><span className="relative">{s.short}</span></Button>)}<div className="nav-footer"><span>{shared ? "Follow at your pace" : `${done.length} of ${allSteps.length} checked`}</span><div className="progress-track"><motion.div animate={{ width: shared ? "0%" : `${done.length / allSteps.length * 100}%` }} transition={{ duration: .45 }} /></div><p>Self-reported · this session</p></div></nav>
-          <Card className="task-card"><CardContent className="p-0"><AnimatePresence mode="wait"><motion.article key={`${step}-${context.managed}-${context.intent}`} initial={{ opacity: 0, x: reduce ? 0 : 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: reduce ? 0 : -16 }} transition={{ duration: .25 }}>
-            <div className="task-heading"><div className="flex items-center justify-between"><span className="eyebrow">STEP {step + 1} OF {allSteps.length}</span><Badge variant="secondary" className="gap-1 font-normal"><span className="size-1 rounded-full bg-current" /> Your action</Badge></div><h2>{current.title}</h2><p>{current.action}</p></div>
+          <Card className="task-card"><CardContent className="task-content p-0"><AnimatePresence mode="wait"><motion.article className="task-article" key={`${step}-${context.managed}-${context.intent}`} initial={{ opacity: 0, x: reduce ? 0 : 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: reduce ? 0 : -16 }} transition={{ duration: .25 }}>
+            <div className="task-scroll" role="region" aria-label="Step instructions" tabIndex={0}><div className="task-heading"><div className="flex items-center justify-between"><span className="eyebrow">STEP {step + 1} OF {allSteps.length}</span><Badge variant="secondary" className="gap-1 font-normal"><span className="size-1 rounded-full bg-current" /> Your action</Badge></div><h2>{current.title}</h2><p>{current.action}</p></div>
             <Diagram labels={current.visual} identity={`step-${step}`} />
             <div className="task-controls"><Button asChild variant="link" className="h-auto px-0"><a href={current.link} target="_blank" rel="noopener noreferrer">{current.destination}<ArrowUpRight /></a></Button>
               <Accordion type="single" collapsible className="mt-4"><AccordionItem value="detail"><AccordionTrigger>Instructions & success check</AccordionTrigger><AccordionContent><p>{current.detail}</p><p className="mt-3"><strong>Check:</strong> {current.check}</p><p className="mt-3"><strong>If blocked:</strong> {current.recovery}</p></AccordionContent></AccordionItem></Accordion>
-              <div className="task-bottom"><Button variant="ghost" className="text-muted-foreground" onClick={() => openPanel("source")}><BookOpen /> Source</Button>{shared ? <Button onClick={() => step < allSteps.length - 1 ? setStep(step + 1) : openPanel("launch")}>{step < allSteps.length - 1 ? "Next step" : "Review launch"}<ArrowRight /></Button> : <Button className="h-10 px-4" onClick={finish}>{done.includes(step) ? "Continue" : "Mark done & continue"} <ArrowRight /></Button>}</div>
+            </div></div>
+          </motion.article></AnimatePresence><div className="task-actions">
+            <div className="task-bottom"><Button variant="ghost" className="text-muted-foreground" onClick={() => openPanel("source")}><BookOpen /> Source</Button>{shared ? <Button onClick={() => step < allSteps.length - 1 ? setStep(step + 1) : openPanel("launch")}>{step < allSteps.length - 1 ? "Next step" : "Review launch"}<ArrowRight /></Button> : <Button className="h-10 px-4" onClick={finish}>{done.includes(step) ? "Continue" : "Mark done & continue"} <ArrowRight /></Button>}</div>
               {done.includes(step) && !shared && <Button variant="link" className="text-xs" onClick={() => setDone(done.filter(i => i !== step))}>Undo completion</Button>}
-            </div>
-          </motion.article></AnimatePresence></CardContent></Card>
+          </div></CardContent></Card>
         </div><p className="guide-footnote">{context.provider === "github" && !context.managed ? "Documentation and registration form checked · no app created" : "Documentation checked · setup not attempted · no approval claimed"}</p>
       </section>}
 
