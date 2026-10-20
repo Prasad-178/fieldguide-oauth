@@ -1,0 +1,184 @@
+{
+  "appName": "Airtable",
+  "officialWebsite": "https://airtable.com",
+  "status": "documented",
+  "summary": "This guide outlines the OAuth setup for an Airtable integration to read records from a test base, covering app registration, user consent, token exchange, and testing.",
+  "effort": {
+    "handsOn": "Estimate: 30-60 min; assumes an existing backend or local development environment for handling redirects and token exchange.",
+    "waiting": "Not published / not confirmed",
+    "basis": "Based on documented steps for application registration, authorization flow, and token handling.",
+    "sourceIds": [
+      1,
+      3
+    ]
+  },
+  "prerequisites": [
+    {
+      "title": "Airtable Account",
+      "detail": "An Airtable account is required to register an OAuth integration and create a test base.",
+      "sourceIds": [
+        1,
+        3
+      ]
+    },
+    {
+      "title": "Development Environment",
+      "detail": "A local or hosted environment capable of handling HTTP redirects and making POST requests for token exchange is needed.",
+      "sourceIds": [
+        1,
+        3
+      ]
+    }
+  ],
+  "permissions": [
+    {
+      "name": "data.records:read",
+      "reason": "This scope is necessary to list and get records from Airtable bases.",
+      "sourceIds": [
+        1,
+        4
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "kind": "setup",
+      "title": "Register OAuth Integration",
+      "action": "Register a new OAuth integration on Airtable's developer portal.",
+      "detail": "Navigate to the Airtable OAuth integration creation page. Provide an application name and set a redirect URL. This URL is where Airtable will send the user after they authorize your application. For local testing, you might use a localhost URL (e.g., http://localhost:4000/airtable-oauth).",
+      "actor": "you",
+      "evidence": "documented",
+      "destination": "Airtable OAuth Integration Creation",
+      "url": "https://airtable.com/create/oauth",
+      "successCheck": "You receive a Client ID and optionally a Client Secret for your integration.",
+      "recovery": "If registration fails, check for any error messages on the Airtable page and ensure your redirect URL is valid.",
+      "sourceIds": [
+        1,
+        3
+      ]
+    },
+    {
+      "kind": "setup",
+      "title": "Configure Application Credentials",
+      "action": "Store your Client ID and Client Secret (if applicable) in your application's configuration.",
+      "detail": "Your application will need the Client ID to initiate the authorization flow. If a Client Secret is provided, it will be used for secure token exchange. Ensure these are stored securely and not exposed publicly.",
+      "actor": "both",
+      "evidence": "documented",
+      "destination": "Your Application's Configuration",
+      "url": "",
+      "successCheck": "Client ID and Client Secret are correctly configured in your application's environment variables or configuration files.",
+      "recovery": "Double-check that the values match those provided by Airtable during registration. Incorrect credentials will lead to authorization failures.",
+      "sourceIds": [
+        1,
+        3
+      ]
+    },
+    {
+      "kind": "connect",
+      "title": "Initiate User Authorization",
+      "action": "Direct the user to Airtable's authorization endpoint.",
+      "detail": "Construct an authorization URL including your Client ID, the configured redirect URI, and the `data.records:read` scope. Redirect the user's browser to `https://airtable.com/oauth2/v1/authorize`. The user will be prompted to grant your application access.",
+      "actor": "you",
+      "evidence": "documented",
+      "destination": "Airtable Authorization Endpoint",
+      "url": "https://airtable.com/oauth2/v1/authorize",
+      "successCheck": "The user is redirected to your specified `redirect_uri` with an authorization `code` in the URL parameters.",
+      "recovery": "If the user is not redirected or an error occurs, verify the authorization URL parameters (client_id, redirect_uri, scope) and ensure they match your registered integration.",
+      "sourceIds": [
+        1
+      ]
+    },
+    {
+      "kind": "connect",
+      "title": "Exchange Code for Tokens",
+      "action": "Make a POST request to Airtable's token endpoint.",
+      "detail": "Upon receiving the authorization `code` at your `redirect_uri`, your application must immediately make a POST request to `https://airtable.com/oauth2/v1/token`. Include the `code`, your `client_id`, `redirect_uri`, and `client_secret` (if applicable, as a Basic Authorization header). This request must be made within 10 minutes.",
+      "actor": "agent",
+      "evidence": "documented",
+      "destination": "Airtable Token Endpoint",
+      "url": "https://airtable.com/oauth2/v1/token",
+      "successCheck": "Your application receives a JSON response containing an `access_token` and `refresh_token`.",
+      "recovery": "If token exchange fails, check the POST request body and headers for correctness, especially the `Authorization` header if using a client secret. Ensure the `code` has not expired.",
+      "sourceIds": [
+        1
+      ]
+    },
+    {
+      "kind": "test",
+      "title": "Read Records from Test Base",
+      "action": "Use the obtained access token to list bases and read records from a test base.",
+      "detail": "First, use the access token to call the 'list bases' endpoint to identify bases accessible by the token. Then, select your test base and use the 'list records' endpoint for that base. Ensure the user granted access to this specific test base during the consent step.",
+      "actor": "you",
+      "evidence": "documented",
+      "destination": "Airtable API Documentation",
+      "url": "https://airtable.com/developers/web/api/oauth-reference",
+      "successCheck": "Your application successfully retrieves a list of records from the designated test base.",
+      "recovery": "If record retrieval fails, verify the access token is valid and has not expired. Confirm the token has access to the specific test base and that the `data.records:read` scope was granted. Check API request formatting.",
+      "sourceIds": [
+        1,
+        4
+      ]
+    },
+    {
+      "kind": "launch",
+      "title": "Review Access and Distribution",
+      "action": "Confirm the intended audience and distribution method for your integration.",
+      "detail": "Airtable's documentation does not explicitly detail a formal review or distribution process for OAuth applications. For internal testing, ensure your integration is only accessible to authorized test users and bases. If public distribution is intended, further clarification from Airtable may be needed regarding any approval processes.",
+      "actor": "you",
+      "evidence": "unknown",
+      "destination": "Airtable Developer Support",
+      "url": "",
+      "successCheck": "Your integration is functioning as expected for its intended audience (e.g., internal testers) and access is appropriately restricted.",
+      "recovery": "If there are concerns about broader access or distribution, contact Airtable developer support for guidance on their policies.",
+      "sourceIds": []
+    }
+  ],
+  "blockers": [],
+  "unknowns": [
+    "There is no explicit documentation on a 'test user' concept for OAuth integrations; access is granted by the user to their own bases.",
+    "The documentation does not detail a formal review or distribution process for OAuth applications, nor does it distinguish between internal and public integrations.",
+    "Specific rate limits for OAuth integrations are not detailed in the provided evidence."
+  ],
+  "agentBrief": "To set up OAuth for Airtable to read records from a test base, you need to: 1. Register your integration at https://airtable.com/create/oauth, setting a redirect URL. 2. Configure your application with the obtained Client ID and Client Secret. 3. Initiate the OAuth flow by redirecting users to https://airtable.com/oauth2/v1/authorize with the `data.records:read` scope. 4. Exchange the authorization code for an access token by POSTing to https://airtable.com/oauth2/v1/token. 5. Use the access token to call Airtable's API to list bases and read records from your test base. Ensure the user grants access to the specific test base during consent. There is no explicit review process documented for OAuth apps. Human authorization is required for account changes and managing secrets.",
+  "version": 1,
+  "request": {
+    "query": "Airtable",
+    "useCase": "Read records from a test base",
+    "audience": "test",
+    "auth": "own"
+  },
+  "generatedAt": "2026-10-20T12:36:14.245Z",
+  "sources": [
+    {
+      "id": 1,
+      "title": "OAuth reference",
+      "url": "https://airtable.com/developers/web/api/oauth-reference",
+      "evidence": "search-excerpt"
+    },
+    {
+      "id": 2,
+      "title": "Third-party integrations via OAuth overview | Airtable Help Center",
+      "url": "https://support.airtable.com/articles/6811769763-third-party-integrations-via-oauth-overview",
+      "evidence": "search-excerpt"
+    },
+    {
+      "id": 3,
+      "title": "README.md",
+      "url": "https://github.com/Airtable/oauth-example/blob/main/README.md",
+      "evidence": "search-excerpt"
+    },
+    {
+      "id": 4,
+      "title": "Scopes",
+      "url": "https://airtable.com/developers/web/api/scopes",
+      "evidence": "search-excerpt"
+    }
+  ],
+  "run": {
+    "model": "google/gemini-2.5-flash",
+    "searches": 1,
+    "toolCalls": 3,
+    "costUsd": 0.0243484,
+    "durationMs": 28056
+  }
+}

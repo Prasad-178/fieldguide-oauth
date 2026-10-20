@@ -54,3 +54,15 @@ Ask several developers to use an unfamiliar provider guide without coaching. Obs
 ## Final local checks
 
 Eight tests passed; ESLint and the production build passed. Direct endpoint checks returned 400 for an empty research request, 403 for a foreign Origin, 413 for an oversized body and 400 for an edited share token. Browser inspection confirmed that source links and run details open correctly. No provider-account actions were performed.
+
+## Production deployment
+
+Deployed to https://fieldguide-oauth.vercel.app in Prasad Sankar’s Vercel project. The landing page and research form returned HTTP 200 without authentication. A real Airtable research request on the deployed API returned six steps, four sources, one search and three reported tool calls in 28.056 seconds; reported cost was $0.0243484. The saved snapshot verified successfully on the deployed server and rendered in the browser. See `examples/airtable.json`.
+
+Cancellation was exercised in the local browser: Stop research returned to an editable form with both inputs preserved. This does not establish whether already-started upstream work was billed.
+
+Vercel's published, active “Research demo limit” rule matches only POST `/api/research`, at six requests per IP per 900 seconds. Rule configuration was inspected; no load test or distributed-abuse test was performed.
+
+`npm audit --omit=dev` reported zero vulnerabilities. The full audit reported nine high-severity entries arising from a braces stack-exhaustion advisory through development-only ESLint/shadcn tooling. npm suggested incompatible major downgrades; none were forced. These remain open development-tooling advisories, not a clean full-dependency audit. Advisory: https://github.com/advisories/GHSA-vfj7-8cjw-p6xm.
+
+The source repository is private pending the owner's sharing choice. No submission form or email was sent.

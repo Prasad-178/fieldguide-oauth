@@ -2,6 +2,8 @@
 
 Find the next step in OAuth setup. Choose a Gmail, Slack or GitHub sample, or research another app by name or website. Guides separate setup work, a controlled connection test, and external launch requirements.
 
+Live: **https://fieldguide-oauth.vercel.app** · [Source repository](https://github.com/Prasad-178/fieldguide-oauth) (currently private; reviewers need access).
+
 Built for the Composio APM integrations take-home with Next.js, React, TypeScript, shadcn/Radix, Tailwind, Motion and OpenRouter.
 
 ## Run locally
@@ -58,7 +60,7 @@ npm run lint
 npm run build
 ```
 
-Read [the validation report](docs/validation.md), [developer UX research](docs/developer-ux-review.md), and actual generated [Linear](docs/examples/linear.json) / [Notion](docs/examples/notion.json) examples. These JSON files are recorded outputs, not fallbacks used by the live endpoint.
+Read [the validation report](docs/validation.md), [developer UX research](docs/developer-ux-review.md), and actual generated [Linear](docs/examples/linear.json) / [Notion](docs/examples/notion.json) / [Airtable](docs/examples/airtable.json) examples. These JSON files are recorded outputs, not fallbacks used by the live endpoint.
 
 ## Deployment
 
@@ -71,7 +73,7 @@ Read [the validation report](docs/validation.md), [developer UX research](docs/d
 - Live research is nondeterministic. Recorded successful examples are evidence of those runs, not a pass rate.
 - No OAuth registration, token exchange, account connection or approval was completed. GitHub's registration form was inspected read-only.
 - Sample guidance is dated 20 October 2026. Generated guides show their own timestamps; neither updates automatically after sharing.
-- In-process limits allow six research requests per IP per 15 minutes and two active requests per server instance. They are not a durable global quota. Tool/output caps reduce individual request cost; they do not impose an account spending cap.
+- In-process limits allow six research requests per IP per 15 minutes and two active requests per server instance. They are not a durable global quota. The deployed Vercel project also has a published firewall rule limiting POST /api/research to six requests per IP per 15 minutes. Tool/output caps reduce individual request cost; they do not impose an account spending cap.
 - Cancellation aborts the local provider request, but cannot guarantee that already-started provider work stops or is unbilled.
 - No usability interviews or full accessibility audit were conducted. Browser checks and direct user feedback informed the UI.
 
