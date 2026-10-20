@@ -1,0 +1,210 @@
+{
+  "appName": "Slack",
+  "officialWebsite": "https://slack.com/",
+  "status": "documented",
+  "summary": "Set up Composio Managed Auth for Slack to send messages to a channel without creating your own Slack OAuth app.",
+  "effort": {
+    "handsOn": "5-10 minutes",
+    "waiting": "Not published / not confirmed",
+    "basis": "Based on documented steps for Composio Managed Auth, which handles app creation and credential management.",
+    "sourceIds": [
+      1
+    ]
+  },
+  "prerequisites": [
+    {
+      "title": "Composio Account",
+      "detail": "You need an active Composio account to access the dashboard and configure authentication.",
+      "sourceIds": [
+        1
+      ]
+    },
+    {
+      "title": "Slack Workspace",
+      "detail": "You need access to a Slack workspace where you intend to send messages.",
+      "sourceIds": [
+        1
+      ]
+    }
+  ],
+  "permissions": [
+    {
+      "name": "chat:write",
+      "reason": "This scope is necessary to allow the Composio integration to send messages to Slack channels.",
+      "sourceIds": [
+        1
+      ]
+    },
+    {
+      "name": "channels:read",
+      "reason": "This scope is typically required to list and identify channels to send messages to.",
+      "sourceIds": [
+        1
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "kind": "setup",
+      "title": "Add Slack Toolkit to Project",
+      "action": "Go to the Slack toolkit page in the Composio Dashboard and click \"Add to Project.\"",
+      "detail": "This initiates the process of integrating Slack with your Composio project.",
+      "actor": "you",
+      "evidence": "documented",
+      "destination": "Composio Dashboard",
+      "url": "https://composio.dev/auth/slack",
+      "successCheck": "The Slack toolkit is added to your project, and you are prompted to name your auth config.",
+      "recovery": "If the toolkit isn't added, ensure you are logged into Composio and try again. Check Composio documentation for troubleshooting.",
+      "sourceIds": [
+        1
+      ]
+    },
+    {
+      "kind": "setup",
+      "title": "Name Auth Config",
+      "action": "Give your auth config a descriptive name and click \"Next.\"",
+      "detail": "This name will help you identify this specific Slack authentication configuration within your Composio project.",
+      "actor": "you",
+      "evidence": "documented",
+      "destination": "Composio Dashboard",
+      "url": "https://composio.dev/auth/slack",
+      "successCheck": "You proceed to the credential selection step.",
+      "recovery": "If you cannot proceed, ensure the name is valid (e.g., no special characters) and try again.",
+      "sourceIds": [
+        1
+      ]
+    },
+    {
+      "kind": "setup",
+      "title": "Select Composio Managed Auth",
+      "action": "Under \"Credentials,\" select \"Composio Managed,\" review the default scopes, and click \"Create Auth Config.\"",
+      "detail": "Composio Managed Auth uses a pre-configured Slack OAuth app, simplifying the setup by eliminating the need for you to create and manage your own app credentials.",
+      "actor": "you",
+      "evidence": "documented",
+      "destination": "Composio Dashboard",
+      "url": "https://composio.dev/auth/slack",
+      "successCheck": "A new auth config is created and appears in your Composio Dashboard.",
+      "recovery": "If the auth config fails to create, check for any error messages in the Composio Dashboard. Contact Composio support if the issue persists.",
+      "sourceIds": [
+        1
+      ]
+    },
+    {
+      "kind": "connect",
+      "title": "Connect Slack Account",
+      "action": "Open the newly created auth config and click \"Connect Account\" to link your Slack account.",
+      "detail": "This action will redirect you to Slack's authorization page to grant Composio access to your workspace.",
+      "actor": "you",
+      "evidence": "documented",
+      "destination": "Composio Dashboard",
+      "url": "https://composio.dev/auth/slack",
+      "successCheck": "You are redirected to the Slack authorization page.",
+      "recovery": "If the redirection fails, check your browser's pop-up blocker settings or try a different browser.",
+      "sourceIds": [
+        1
+      ]
+    },
+    {
+      "kind": "connect",
+      "title": "Authorize Slack Access",
+      "action": "On the Slack page, select your workspace and click \"Allow\" to grant Composio the necessary permissions.",
+      "detail": "This step authorizes Composio to interact with your selected Slack workspace on your behalf, based on the scopes reviewed earlier.",
+      "actor": "you",
+      "evidence": "documented",
+      "destination": "Slack Authorization Page",
+      "url": "",
+      "successCheck": "You are redirected back to the Composio Dashboard, and your connected account appears with an \"Active\" status.",
+      "recovery": "If authorization fails, ensure you have the necessary permissions in your Slack workspace. A workspace admin might need to approve the app if restrictions are in place (check Slack's App Management Settings).",
+      "sourceIds": [
+        1
+      ]
+    },
+    {
+      "kind": "test",
+      "title": "Test Sending a Message",
+      "action": "Use the Composio SDK or API with your new Auth Config ID to send a test message to a Slack channel.",
+      "detail": "This verifies that the integration is working correctly and Composio can successfully interact with your Slack workspace to send messages.",
+      "actor": "both",
+      "evidence": "recommendation",
+      "destination": "Your Development Environment",
+      "url": "",
+      "successCheck": "A message successfully appears in the specified Slack channel.",
+      "recovery": "If the message fails to send, check the Composio logs for errors. Verify the channel ID is correct and that the connected Slack account has permission to post in that channel. Ensure the Auth Config ID is correctly passed in your session.",
+      "sourceIds": [
+        1,
+        4
+      ]
+    },
+    {
+      "kind": "launch",
+      "title": "Review Slack Workspace Settings",
+      "action": "If issues persist, a Slack workspace admin should review \"Settings & administration\" -> \"Manage apps\" -> \"App Management Settings\" to ensure \"Require apps from Slack Marketplace\" and \"Require approved apps\" are disabled.",
+      "detail": "These Slack workspace settings can prevent non-Marketplace apps, including Composio's managed app, from being installed or functioning correctly.",
+      "actor": "you",
+      "evidence": "documented",
+      "destination": "Slack Workspace Settings",
+      "url": "https://slack.com/customize/apps",
+      "successCheck": "The Composio managed app is able to function without being blocked by workspace policies.",
+      "recovery": "If these settings are enabled and cannot be disabled, consider using a custom auth config with your own Slack app, which can be submitted for approval if necessary.",
+      "sourceIds": [
+        3
+      ]
+    }
+  ],
+  "blockers": [
+    {
+      "title": "Slack Workspace App Restrictions",
+      "detail": "If the Slack workspace has \"Require apps from Slack Marketplace\" or \"Require approved apps\" enabled, the Composio Managed Auth app might be blocked.",
+      "sourceIds": [
+        3
+      ]
+    }
+  ],
+  "unknowns": [
+    "What are the default scopes provided by Composio Managed Auth for Slack, specifically for sending messages?",
+    "Are there any rate limits or usage quotas associated with Composio Managed Auth for Slack that might impact public distribution?",
+    "What is the process for switching from Composio Managed Auth to a custom Slack OAuth app if branding or specific scopes are needed later?"
+  ],
+  "agentBrief": "To set up Composio Managed Auth for Slack to send messages, follow these steps:\n1. Go to the Slack toolkit page in the Composio Dashboard (https://composio.dev/auth/slack) and click \"Add to Project.\"\n2. Name the auth config and click \"Next.\"\n3. Select \"Composio Managed\" under Credentials, review scopes, and click \"Create Auth Config.\"\n4. Open the new auth config and click \"Connect Account.\"\n5. On the Slack page, select the workspace and click \"Allow.\"\n6. The connected account should show as \"Active.\"\n\nFor testing, use the Composio SDK/API with the Auth Config ID to send a message to a Slack channel (https://slack.com/api/chat.postMessage). If issues arise, a Slack workspace admin may need to disable \"Require apps from Slack Marketplace\" and \"Require approved apps\" in Slack's \"Settings & administration\" -> \"Manage apps\" -> \"App Management Settings\" (https://slack.com/customize/apps).",
+  "version": 1,
+  "request": {
+    "query": "Slack",
+    "useCase": "Send a message to a channel",
+    "audience": "public",
+    "auth": "managed"
+  },
+  "generatedAt": "2026-10-20T21:09:16.107Z",
+  "sources": [
+    {
+      "id": 1,
+      "title": "How to Set Up Slack OAuth 2.0 with Composio | Composio",
+      "url": "https://composio.dev/auth/slack",
+      "evidence": "search-excerpt"
+    },
+    {
+      "id": 2,
+      "title": "Managed OAuth apps",
+      "url": "https://docs.composio.dev/toolkits/managed-auth",
+      "evidence": "search-excerpt"
+    },
+    {
+      "id": 3,
+      "title": "Slack - Composio Toolkit",
+      "url": "https://docs.composio.dev/toolkits/slack",
+      "evidence": "search-excerpt"
+    },
+    {
+      "id": 4,
+      "title": "Managed vs custom auth (/docs/authentication/custom-app-vs-managed-app)",
+      "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+      "evidence": "search-excerpt"
+    }
+  ],
+  "run": {
+    "model": "google/gemini-2.5-flash",
+    "searches": 1,
+    "toolCalls": 2,
+    "costUsd": 0.01794501,
+    "durationMs": 17242
+  }
+}

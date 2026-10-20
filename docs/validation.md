@@ -84,3 +84,35 @@ The provider schema now retains object structure, required properties, types and
 The same request completed locally after the change: seven steps, four sources, 19.650 seconds and reported cost $0.01916793. Twelve tests passed, including provider schema compatibility, rejection diagnostics, HTTP-200 error handling and runtime rejection of oversized generated guides. Lint and build passed. Earlier live successes were insufficient to detect this provider compatibility failure; a few successful runs are not a reliability estimate.
 
 Implementation reference: [Gemini structured-output limitations](https://ai.google.dev/gemini-api/docs/structured-output); [OpenRouter error formats](https://openrouter.ai/docs/api_reference/errors-and-debugging).
+
+## Broader regression pass — 21 October 2026
+
+The Asana schema fix was verified on production via the API (6 steps, 4 sources, 19.484 seconds), and by clicking **Try research again** in the browser (7 steps). Inspecting content, rather than merely checking HTTP success, then exposed more issues:
+
+- An Asana draft described token acquisition as its operation test. Research now explicitly looks for the requested API operation and generation instructions require its observable result. The final local Asana run returned task records as its success criterion (7 sources, 20.051 seconds). This is prompt guidance plus manual inspection, **not** a universal semantic guarantee.
+- Managed Slack/Notion originally returned custom-client setup. Both research stages now explicitly interpret managed as **Composio-managed OAuth**, search Composio sources and distinguish managed production concerns from custom-app Marketplace review. A runtime provenance check also refuses a documented managed setup without a Composio-cited setup/connection step. This checks minimum evidence provenance, not full factual entailment.
+- Asana's `oauth_authorize` / `oauth_token` URLs escaped the original endpoint filter. Known endpoint forms now become prose-only instructions, while legitimate Slack app settings and Notion authorization documentation remain clickable.
+- Changing a shared-link fragment in the same tab could show the prior snapshot. Shared-guide loading now observes hash changes, aborts stale verification, clears old results/checklist state and verifies the new token. Browser regression: valid Asana snapshot → invalid token showed the invalid-link error and no old guide.
+- Offline browser requests exposed raw “Failed to fetch”. They now retain the form and offer an actionable connection error. Provider `null` JSON and cancellation during response-body reading are handled explicitly.
+- Intermittent citation validation failures occurred. The generator now makes at most one corrected draft using the same evidence and full validation; both generation costs are included. A second invalid draft remains an error. No unvalidated fallback is displayed, and there is no automatic retry for HTTP/provider failures.
+
+### Live cases inspected
+
+| Input | Outcome after relevant correction | Remaining limits |
+|---|---|---|
+| Asana / read workspace tasks / external users / own app | Completed; operation test checks returned task records; public distribution distinguished from optional listing | No Asana account or API operation was executed. |
+| Slack / send channel message / external users / managed | Completed; Composio managed configuration, consent, message test and workspace policy check; 17.242 seconds | The guide is documentation synthesis; exact dashboard labels can drift. |
+| Discord website URL / read profile / testing / own app | Completed; `identify` scope and profile retrieval test; 15.881 seconds | No Discord OAuth connection performed. |
+| Notion / read selected pages / testing / managed | Initial draft rejected for citation mismatch; subsequent run completed with Composio sources; 13.023 seconds | Output explicitly leaves the exact read endpoint/tool response unconfirmed; this is incomplete operation detail, not proof of a complete integration. |
+| Mercury / read account information | Initial provider 429; later attempts returned no recorded search and were refused | App identity was **not** resolved; this remains an unsuccessful ambiguous-name experience. Use an official URL. |
+| QuasarLoom7391 / read tasks | No recorded live search; result refused | No fabricated guide was shown. Does not prove the app does not exist. |
+
+Selected outputs are in `examples/asana.json`, `examples/slack-managed.json`, `examples/notion-managed.json` and `examples/discord.json`. These are illustrative captured runs, not guaranteed output for future requests. During diagnostic runs, provider response/body failures also occurred; the app must still handle provider availability and timeouts. This small, iteratively corrected sample is not a reliability benchmark or success-rate estimate.
+
+### Automated and browser results
+
+36 automated tests passed. Coverage now includes provider 400/401/402/403/429/500/503, errors inside HTTP 200, invalid/null JSON, empty/truncated content, missing search/evidence, bounded draft correction, input validation, NDJSON error delivery, server deadline, cancellation before and during a request, source references, managed provenance, navigation endpoints, and signed-snapshot integrity. Tests use fake provider responses; they neither spend API credits nor alter external accounts. ESLint, the production build and `git diff --check` passed.
+
+Browser checks: Asana retry, instructions/step completion, share creation and reload (0 checked in the shared copy), result-heading focus, same-tab invalid-token rejection, cancellation with both inputs preserved, offline error with inputs preserved, and GitHub's curated managed/public route. At 390×844 the generated guide had no horizontal overflow and its primary action ended at y=832; tapping it changed the checklist to 1/7. Earlier desktop viewport and reduced-motion checks above remain relevant.
+
+A full provider integration, independent fact-check of every generated claim, large repeated-trial benchmark, and developer usability study remain undone. We do not equate passing offline tests with verified OAuth setup or public-launch approval.

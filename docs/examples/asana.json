@@ -1,0 +1,215 @@
+{
+  "appName": "Asana",
+  "officialWebsite": "https://developers.asana.com/docs/oauth",
+  "status": "documented",
+  "summary": "Set up your own Asana OAuth application to read tasks from a user's workspace. This involves registering your app, configuring the necessary `tasks:read` scope, and setting its distribution for public access.",
+  "effort": {
+    "handsOn": "30-60 min",
+    "waiting": "Not published / not confirmed",
+    "basis": "Assumes familiarity with OAuth concepts and Asana developer console. Waiting time for public app review is not specified.",
+    "sourceIds": [
+      6
+    ]
+  },
+  "prerequisites": [
+    {
+      "title": "Asana Account",
+      "detail": "You need an Asana account to access the developer console and create an application.",
+      "sourceIds": []
+    },
+    {
+      "title": "OAuth 2.0 Knowledge",
+      "detail": "Familiarity with OAuth 2.0 concepts, including authorization codes, access tokens, and refresh tokens, is beneficial for implementing the flow.",
+      "sourceIds": [
+        3
+      ]
+    }
+  ],
+  "permissions": [
+    {
+      "name": "tasks:read",
+      "reason": "This scope is required to retrieve task records, including details for individual tasks, tasks within projects, sections, tags, and user task lists.",
+      "sourceIds": [
+        1,
+        2,
+        3,
+        4
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "kind": "setup",
+      "title": "Register Your OAuth Application",
+      "action": "Visit the Asana developer console and create a new OAuth application.",
+      "detail": "Navigate to the Asana developer console and follow the instructions to register a new application. This process will provide you with a Client ID and Client Secret.",
+      "actor": "you",
+      "evidence": "documented",
+      "destination": "Asana Developer Console",
+      "url": "https://developers.asana.com/",
+      "successCheck": "You have successfully created an Asana OAuth application and obtained its Client ID and Client Secret.",
+      "recovery": "If you encounter issues, review the Asana OAuth documentation or check the developer console for error messages.",
+      "sourceIds": [
+        3
+      ]
+    },
+    {
+      "kind": "permissions",
+      "title": "Configure OAuth Scopes",
+      "action": "Specify `tasks:read` as a required OAuth scope for your application.",
+      "detail": "During app registration or by editing your app in the developer console, ensure that the `tasks:read` scope is selected. This grants your application permission to read task data.",
+      "actor": "you",
+      "evidence": "documented",
+      "destination": "Asana Developer Console - OAuth Settings",
+      "url": "https://developers.asana.com/docs/oauth",
+      "successCheck": "The `tasks:read` scope is listed under your application's configured OAuth permissions.",
+      "recovery": "If the scope is missing, add it in the developer console under your app's OAuth settings.",
+      "sourceIds": [
+        1,
+        3
+      ]
+    },
+    {
+      "kind": "setup",
+      "title": "Implement OAuth Authorization Flow",
+      "action": "Develop the code to initiate the OAuth authorization flow, handle the callback, and exchange the authorization code for an access token.",
+      "detail": "Your application needs to redirect users to Asana's authorization endpoint, specifying your Client ID, redirect URI, and the `tasks:read` scope. After the user grants consent, Asana will redirect back to your specified URI with an authorization code. Your backend must then exchange this code for an access token and refresh token.",
+      "actor": "both",
+      "evidence": "documented",
+      "destination": "Asana OAuth Documentation",
+      "url": "https://developers.asana.com/docs/oauth",
+      "successCheck": "Your application can successfully obtain an access token and refresh token after a user authorizes it.",
+      "recovery": "Verify your redirect URI, client ID, and client secret. Check server logs for errors during token exchange.",
+      "sourceIds": [
+        3
+      ]
+    },
+    {
+      "kind": "connect",
+      "title": "Set App Distribution to \"Any Workspace\"",
+      "action": "In the Asana developer console, change your app's distribution setting to \"Any workspace.\"",
+      "detail": "To allow users from any Asana workspace to authorize your app, navigate to the \"Manage distribution\" tab for your app in the developer console and select the \"Any workspace\" option. This is necessary for public audience apps.",
+      "actor": "you",
+      "evidence": "documented",
+      "destination": "Asana Developer Console - Manage Distribution",
+      "url": "https://developers.asana.com/docs/share-your-app",
+      "successCheck": "Your application's distribution is set to \"Any workspace\" in the developer console.",
+      "recovery": "If the setting is incorrect, re-select \"Any workspace\" and save the changes.",
+      "sourceIds": [
+        5
+      ]
+    },
+    {
+      "kind": "test",
+      "title": "Test Reading Tasks",
+      "action": "Use the obtained access token to make an API call to retrieve tasks from a user's workspace.",
+      "detail": "After a user has authorized your application and you have an access token, make a GET request to an Asana tasks endpoint, such as `GET /tasks` or `GET /projects/{project_gid}/tasks`, including the access token in the authorization header.",
+      "actor": "both",
+      "evidence": "documented",
+      "destination": "Asana API Reference - Get tasks",
+      "url": "https://developers.asana.com/reference/gettasks",
+      "successCheck": "Your application successfully retrieves a list of task records from the authorized user's workspace.",
+      "recovery": "Check the API response for error messages. Ensure the access token is valid and has the `tasks:read` scope. Verify the user has tasks in the specified context.",
+      "sourceIds": [
+        1,
+        2,
+        4
+      ]
+    },
+    {
+      "kind": "launch",
+      "title": "Consider Public App Directory Submission (Optional)",
+      "action": "If you intend to list your app publicly in the Asana App Directory, submit it for review.",
+      "detail": "Submitting your app for review is only required if you want it to be discoverable in the Asana App Directory or available to users beyond your own organization. During review, the app will not be editable.",
+      "actor": "you",
+      "evidence": "documented",
+      "destination": "Asana Developer Console - Publish App",
+      "url": "https://developers.asana.com/docs/publish-your-app",
+      "successCheck": "Your app submission status is visible on the \"Submit for review\" page.",
+      "recovery": "If the submission fails, review the feedback provided by Asana and make necessary adjustments before resubmitting.",
+      "sourceIds": [
+        6
+      ]
+    }
+  ],
+  "blockers": [
+    {
+      "title": "Missing Required Scopes",
+      "detail": "If your application does not request the `tasks:read` scope, it will not be able to retrieve task information.",
+      "sourceIds": [
+        1,
+        3
+      ]
+    },
+    {
+      "title": "Incorrect Redirect URI",
+      "detail": "An incorrect or unregistered redirect URI will prevent the OAuth flow from completing successfully, as Asana will not know where to send the authorization code.",
+      "sourceIds": [
+        3
+      ]
+    }
+  ],
+  "unknowns": [
+    "The exact duration of the app review process for public distribution is not specified, only that it involves a security review and QA for apps with components."
+  ],
+  "agentBrief": "To set up Asana OAuth for reading tasks from a user's workspace, you need to: 1. Register an OAuth app in the Asana Developer Console (https://developers.asana.com/). 2. Configure the `tasks:read` scope for the app. 3. Implement the OAuth authorization flow to obtain access tokens. 4. Set the app's distribution to \"Any workspace\" (https://developers.asana.com/docs/share-your-app). 5. Test task retrieval using the Asana API (https://developers.asana.com/reference/gettasks). 6. Optionally, submit the app for public directory listing (https://developers.asana.com/docs/publish-your-app). I need human authorization for any account changes or app submissions.",
+  "version": 1,
+  "request": {
+    "query": "asana",
+    "useCase": "read tasks from a user's workspace",
+    "audience": "public",
+    "auth": "own"
+  },
+  "generatedAt": "2026-10-20T21:12:15.061Z",
+  "sources": [
+    {
+      "id": 1,
+      "title": "developers.asana.com",
+      "url": "https://developers.asana.com/docs/oauth-scopes",
+      "evidence": "search-excerpt"
+    },
+    {
+      "id": 2,
+      "title": "developers.asana.com",
+      "url": "https://developers.asana.com/reference/gettasks",
+      "evidence": "search-excerpt"
+    },
+    {
+      "id": 3,
+      "title": "OAuth",
+      "url": "https://developers.asana.com/docs/oauth",
+      "evidence": "search-excerpt"
+    },
+    {
+      "id": 4,
+      "title": "Get a task",
+      "url": "https://developers.asana.com/reference/getTask",
+      "evidence": "search-excerpt"
+    },
+    {
+      "id": 5,
+      "title": "developers.asana.com",
+      "url": "https://developers.asana.com/docs/share-your-app",
+      "evidence": "search-excerpt"
+    },
+    {
+      "id": 6,
+      "title": "Publish your app",
+      "url": "https://developers.asana.com/docs/publish-your-app",
+      "evidence": "search-excerpt"
+    },
+    {
+      "id": 7,
+      "title": "developers.asana.com",
+      "url": "https://developers.asana.com/docs/overview",
+      "evidence": "search-excerpt"
+    }
+  ],
+  "run": {
+    "model": "google/gemini-2.5-flash",
+    "searches": 2,
+    "toolCalls": 3,
+    "costUsd": 0.0273368,
+    "durationMs": 20051
+  }
+}

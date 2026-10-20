@@ -1,0 +1,193 @@
+{
+  "appName": "Discord",
+  "officialWebsite": "https://discord.com",
+  "status": "documented",
+  "summary": "Set up your own OAuth application on Discord to read the signed-in user's basic profile information.",
+  "effort": {
+    "handsOn": "15-30 min",
+    "waiting": "Not published / not confirmed",
+    "basis": "Assumes an existing Discord developer account and familiarity with OAuth concepts.",
+    "sourceIds": []
+  },
+  "prerequisites": [
+    {
+      "title": "Discord Developer Account",
+      "detail": "You need a Discord account to access the Developer Portal and create an application.",
+      "sourceIds": []
+    },
+    {
+      "title": "OAuth2 Application",
+      "detail": "You must have an existing OAuth2 application registered in the Discord Developer Portal.",
+      "sourceIds": []
+    },
+    {
+      "title": "Redirect URI",
+      "detail": "Your application needs a configured redirect URI where Discord will send the authorization code after user consent.",
+      "sourceIds": []
+    }
+  ],
+  "permissions": [
+    {
+      "name": "identify",
+      "reason": "This scope is required to read the user's basic profile information such as ID, username, discriminator, and avatar.",
+      "sourceIds": [
+        2,
+        3,
+        4
+      ]
+    },
+    {
+      "name": "email",
+      "reason": "This scope is optional, but if included, it allows your application to retrieve the user's email address.",
+      "sourceIds": [
+        1,
+        2,
+        3
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "kind": "setup",
+      "title": "Configure OAuth2 Scopes",
+      "action": "Add the 'identify' scope and optionally the 'email' scope to your Discord OAuth2 application.",
+      "detail": "Navigate to your application in the Discord Developer Portal. Under the OAuth2 section, ensure that 'identify' is selected. If you need the user's email, also select 'email'. These scopes define what user data your application can access.",
+      "actor": "you",
+      "evidence": "documented",
+      "destination": "Discord Developer Portal",
+      "url": "https://discord.com/developers/applications",
+      "successCheck": "The 'identify' scope (and 'email' if desired) is listed under your application's OAuth2 scopes.",
+      "recovery": "If scopes are not saved, ensure you click 'Save Changes' in the Developer Portal. Verify the correct scopes are selected.",
+      "sourceIds": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "kind": "connect",
+      "title": "Initiate User Authorization Flow",
+      "action": "Construct and redirect the user to the Discord authorization URL with the required scopes.",
+      "detail": "Your application must redirect the user to Discord's authorization endpoint, including your client ID, redirect URI, and the 'identify' (and 'email' if used) scopes. This initiates the consent flow where the user grants your application permission.",
+      "actor": "both",
+      "evidence": "documented",
+      "destination": "Discord OAuth2 Documentation",
+      "url": "https://docs.discord.com/developers/topics/oauth2",
+      "successCheck": "The user is redirected to Discord's consent screen, showing your application's name and the requested permissions.",
+      "recovery": "If the redirect fails or shows an error, check your authorization URL parameters, especially the client ID, redirect URI, and scope formatting. Ensure the redirect URI is registered in the Discord Developer Portal.",
+      "sourceIds": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "kind": "connect",
+      "title": "Handle Authorization Callback",
+      "action": "Receive the authorization code at your redirect URI.",
+      "detail": "After the user grants consent, Discord redirects them back to your specified redirect URI with an authorization code in the URL parameters. Your application must be ready to capture this code.",
+      "actor": "both",
+      "evidence": "documented",
+      "destination": "Discord OAuth2 Documentation",
+      "url": "https://docs.discord.com/developers/topics/oauth2",
+      "successCheck": "Your application successfully receives an authorization code as a URL parameter at your redirect URI.",
+      "recovery": "If no code is received, check server logs for errors, ensure your redirect URI handler is active, and verify the user completed the consent flow.",
+      "sourceIds": [
+        1
+      ]
+    },
+    {
+      "kind": "connect",
+      "title": "Exchange Code for Access Token",
+      "action": "Send a POST request to Discord's token endpoint to exchange the authorization code for an access token.",
+      "detail": "Using the authorization code, your client ID, client secret, and redirect URI, make a POST request to Discord's token endpoint. This exchange grants your application an access token, which is used to make authenticated API requests.",
+      "actor": "both",
+      "evidence": "documented",
+      "destination": "Discord OAuth2 Documentation",
+      "url": "https://docs.discord.com/developers/topics/oauth2",
+      "successCheck": "Your application receives a JSON response containing an 'access_token' and 'expires_in' field.",
+      "recovery": "If token exchange fails, verify your client ID, client secret, authorization code, and redirect URI are correct and that the POST request is properly formatted. Check Discord's API error responses for specific issues.",
+      "sourceIds": [
+        1
+      ]
+    },
+    {
+      "kind": "test",
+      "title": "Retrieve User Profile",
+      "action": "Make an authenticated GET request to the '/users/@me' endpoint.",
+      "detail": "Use the obtained access token in the 'Authorization: Bearer <ACCESS_TOKEN>' header to call the '/users/@me' API endpoint. This will retrieve the signed-in user's profile information based on the granted 'identify' and 'email' scopes.",
+      "actor": "both",
+      "evidence": "documented",
+      "destination": "Discord User Resource Documentation",
+      "url": "https://docs.discord.com/developers/resources/user",
+      "successCheck": "The API returns a JSON object containing the user's 'id', 'username', 'discriminator', 'global_name', 'avatar', and optionally 'email' if the 'email' scope was granted.",
+      "recovery": "If the API call fails, check the access token's validity and expiration. Ensure the 'identify' scope was successfully granted. Review Discord's API error messages for details.",
+      "sourceIds": [
+        2,
+        4
+      ]
+    },
+    {
+      "kind": "launch",
+      "title": "Review Discord Developer Policy",
+      "action": "Familiarize yourself with Discord's Developer Terms of Service and policies.",
+      "detail": "Before making your application publicly available, review Discord's developer policies to ensure compliance regarding data usage, security, and user experience. Some scopes may require approval.",
+      "actor": "you",
+      "evidence": "documented",
+      "destination": "Discord Developer Documentation",
+      "url": "https://discord.com/developers/docs/resources/user",
+      "successCheck": "You have read and understood the relevant Discord developer policies.",
+      "recovery": "If unsure about compliance, consult Discord's official documentation or support channels.",
+      "sourceIds": [
+        1
+      ]
+    }
+  ],
+  "blockers": [],
+  "unknowns": [
+    "Are there any rate limits for the /users/@me endpoint that need to be considered for production use?",
+    "What is the process for getting approval for scopes that require it, if additional scopes are needed in the future?"
+  ],
+  "agentBrief": "To set up Discord OAuth for reading the signed-in user's profile, you need to configure your existing Discord OAuth2 application. Ensure the 'identify' scope is enabled, and 'email' if the user's email is required. The process involves redirecting the user for authorization, handling the callback to get an authorization code, exchanging this code for an access token, and then using the access token to call the `/users/@me` endpoint. Refer to the Discord OAuth2 Documentation (https://docs.discord.com/developers/topics/oauth2) and User Resource Documentation (https://docs.discord.com/developers/resources/user) for details. Human authorization is required for configuring the application and handling user consent.",
+  "version": 1,
+  "request": {
+    "query": "https://discord.com",
+    "useCase": "Read the signed-in user’s profile",
+    "audience": "test",
+    "auth": "own"
+  },
+  "generatedAt": "2026-10-20T21:06:55.104Z",
+  "sources": [
+    {
+      "id": 1,
+      "title": "OAuth2 - Documentation - Discord",
+      "url": "https://docs.discord.com/developers/topics/oauth2",
+      "evidence": "search-excerpt"
+    },
+    {
+      "id": 2,
+      "title": "docs.discord.com",
+      "url": "https://docs.discord.com/developers/resources/user",
+      "evidence": "search-excerpt"
+    },
+    {
+      "id": 3,
+      "title": "OAuth2 and Permissions - Documentation",
+      "url": "https://docs.discord.com/developers/platform/oauth2-and-permissions",
+      "evidence": "search-excerpt"
+    },
+    {
+      "id": 4,
+      "title": "OAuth2Scopes Enum (core - main) | discord.js",
+      "url": "https://discord.js.org/docs/packages/core/main/OAuth2Scopes:Enum",
+      "evidence": "search-excerpt"
+    }
+  ],
+  "run": {
+    "model": "google/gemini-2.5-flash",
+    "searches": 1,
+    "toolCalls": 2,
+    "costUsd": 0.01707555,
+    "durationMs": 15881
+  }
+}

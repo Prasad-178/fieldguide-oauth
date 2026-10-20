@@ -44,20 +44,24 @@ export default function ResearchWorkbench({ query = "", useCase = "", audience =
 
   useEffect(() => {
     if (!shared) return;
-    const controller = new AbortController();
-    const value = new URLSearchParams(window.location.hash.slice(1)).get("guide");
+    let controller: AbortController | null = null;
     async function load() {
+      controller?.abort();
+      const pending = new AbortController();controller=pending;
+      const value = new URLSearchParams(window.location.hash.slice(1)).get("guide");
+      setGuide(null);setToken("");setDone([]);setStep(0);setError("");setPhase("loading");
       if (!value) { setError("The guide link is missing its saved content. Ask the sender to copy the full link."); setPhase("form"); return; }
       try {
-        const res = await fetch("/api/guides/verify",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token:value}),signal:controller.signal});
+        const res = await fetch("/api/guides/verify",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token:value}),signal:pending.signal});
         const data = await res.json();
         if(!res.ok) throw new Error(data.error);
         const checked = savedGuide.parse(data.guide);
-        setGuide(checked);setInput(checked.request);setToken(value!);setPhase("result");
-      } catch(e) { if(!controller.signal.aborted){setError(e instanceof Error ? e.message : "This guide could not be opened.");setPhase("form");} }
+        if(!pending.signal.aborted){setGuide(checked);setInput(checked.request);setToken(value);setPhase("result");}
+      } catch(e) { if(!pending.signal.aborted){setError(e instanceof Error ? e.message : "This guide could not be opened.");setPhase("form");} }
     }
-    void load();
-    return ()=>controller.abort();
+    const reload = () => { void load(); };
+    reload();window.addEventListener("hashchange",reload);
+    return ()=>{controller?.abort();window.removeEventListener("hashchange",reload);};
   },[shared]);
   useEffect(() => {
     if(!busy)return;
@@ -92,7 +96,7 @@ export default function ResearchWorkbench({ query = "", useCase = "", audience =
       while(true){const {value,done}=await reader.read();buffer+=decoder.decode(value,{stream:!done});const lines=buffer.split("\n");buffer=lines.pop()||"";for(const line of lines)receive(line);if(done)break;}
       if(buffer.trim())receive(buffer);
       if(!completed)throw new Error("Research ended before a guide was ready. Your input is preserved.");
-    } catch(e){if(!controller.signal.aborted){setError(e instanceof Error ? e.message : "Research could not finish. Try again.");setPhase("form");}}
+    } catch(e){if(!controller.signal.aborted){setError(e instanceof TypeError ? "Connection lost. Check your internet connection and try again; your input is saved." : e instanceof SyntaxError ? "The research service returned an unreadable response. Your input is saved; try again." : e instanceof Error ? e.message : "Research could not finish. Try again.");setPhase("form");}}
     finally{if(abortRef.current===controller)abortRef.current=null;}
   }
   function cancel(){abortRef.current?.abort();setPhase("form");setError("Research stopped. You can edit your task and try again.");}
@@ -135,7 +139,7 @@ export default function ResearchWorkbench({ query = "", useCase = "", audience =
         <div className="guide-header"><div><Button variant="ghost" className="guide-back -ml-3" onClick={()=>{setPhase("form");setError("");}}><ArrowLeft/>Refine research</Button><div className="flex items-center gap-3"><span className="provider-symbol"><Globe2 className="size-5"/></span><div><h1 ref={resultHeading} tabIndex={-1}>{guide.appName} setup</h1><p className="mt-1 text-xs text-muted-foreground">{guide.request.audience === "test" ? "Testing" : "External users"} · {guide.request.auth === "managed" ? "Managed auth" : "Own OAuth app"}</p></div></div></div><Button variant="outline" onClick={shareGuide}><Link2/>Share</Button></div>
         <p className="research-summary">{guide.summary}</p>
         {guide.status!=="documented"&&<div className="launch-strip"><CircleAlert className="size-4 shrink-0"/><span>{guide.status==="needs-clarification" ? "Some details need clarification. Review the open questions before following these steps." : "OAuth setup is not confirmed. This guide explains what to investigate next."}</span></div>}
-        <div className="effort-row"><div><Clock3 className="size-4"/><span><span className="metric-label">Hands-on work</span>{guide.effort.handsOn}</span></div><div><ShieldCheck className="size-4"/><span><span className="metric-label">External waiting</span>{guide.effort.waiting}</span></div><Button variant="ghost" size="sm" onClick={()=>openPanel("launch")}>Details<ArrowUpRight/></Button></div>
+        <div className="effort-row"><div><Clock3 className="size-4"/><span><span className="metric-label">Hands-on estimate</span>{guide.effort.handsOn}</span></div><div><ShieldCheck className="size-4"/><span><span className="metric-label">External waiting</span>{guide.effort.waiting}</span></div><Button variant="ghost" size="sm" onClick={()=>openPanel("launch")}>Details<ArrowUpRight/></Button></div>
         <div className="guide-grid"><nav className="step-nav research-nav" aria-label="Research guide steps"><p className="eyebrow">YOUR PATH</p>{guide.steps.map((s,i)=><Button key={i} variant="ghost" className={cn("step-nav-button",step===i&&"active")} aria-label={`Step ${i+1}: ${s.title}`} aria-current={step===i?"step":undefined} onClick={()=>setStep(i)}>{step===i&&<motion.span layoutId="research-step" className="active-step-bg"/>}<span className={cn("step-count",done.includes(i)&&"complete")}>{done.includes(i)?<Check className="size-3.5"/>:i+1}</span><span className="relative research-step-label">{s.title}</span></Button>)}<div className="nav-footer">{done.length} of {guide.steps.length} checked<div className="progress-track"><motion.div animate={{width:`${done.length/guide.steps.length*100}%`}}/></div><p>Your checks · this session</p></div></nav>
         <div className="research-task-stack">
           <div className="research-task-card"><AnimatePresence mode="wait"><motion.article className="task-article" key={step} initial={{opacity:0,y:reduce?0:10}} animate={{opacity:1,y:0}} exit={{opacity:0}} transition={{duration:.18}}>

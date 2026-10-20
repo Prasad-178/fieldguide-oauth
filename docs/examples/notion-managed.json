@@ -1,0 +1,134 @@
+{
+  "appName": "Notion",
+  "officialWebsite": "https://www.notion.so",
+  "status": "documented",
+  "summary": "Set up Composio's managed OAuth for Notion to allow users to connect their Notion accounts and grant your application read access to selected pages. This uses Composio's pre-configured integration, simplifying setup.",
+  "effort": {
+    "handsOn": "5-10 min",
+    "waiting": "Not published / not confirmed",
+    "basis": "Based on direct user interaction with Composio and Notion UIs, assuming no prior Composio account setup.",
+    "sourceIds": [
+      4
+    ]
+  },
+  "prerequisites": [
+    {
+      "title": "Composio Account",
+      "detail": "You need an active Composio account to manage integrations and connect Notion.",
+      "sourceIds": [
+        1
+      ]
+    },
+    {
+      "title": "Notion Account",
+      "detail": "An existing Notion account is required for the user to connect and grant access.",
+      "sourceIds": [
+        4
+      ]
+    }
+  ],
+  "permissions": [
+    {
+      "name": "Read content",
+      "reason": "This capability is necessary to read pages selected by the user, fulfilling the use case requirement.",
+      "sourceIds": [
+        1
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "kind": "connect",
+      "title": "Connect Notion Account via Composio",
+      "action": "Initiate the connection process for Notion within your Composio application or dashboard.",
+      "detail": "Users will be prompted to sign in with their Notion account and approve access to Composio's managed Notion app. Composio handles the OAuth flow, token storage, and refresh automatically.",
+      "actor": "you",
+      "evidence": "documented",
+      "destination": "Composio Dashboard",
+      "url": "https://platform.composio.dev/",
+      "successCheck": "The user successfully signs into Notion and grants access, resulting in a connected Notion account visible in Composio.",
+      "recovery": "If connection fails, ensure the user's Notion account is active and they have permissions to grant access. Try reconnecting.",
+      "sourceIds": [
+        1,
+        4
+      ]
+    },
+    {
+      "kind": "test",
+      "title": "Test Reading Notion Pages",
+      "action": "Use the Composio integration to attempt reading content from a Notion page that the connected user has selected.",
+      "detail": "After a user connects their Notion account, use Composio's API or SDK to programmatically request content from a specific Notion page. This verifies the 'Read content' capability.",
+      "actor": "both",
+      "evidence": "recommendation",
+      "destination": "Your Application/Composio API",
+      "url": "",
+      "successCheck": "The application successfully retrieves content from the specified Notion page without errors.",
+      "recovery": "If content retrieval fails, check Composio logs for errors. Ensure the connected Notion account has access to the specific page and that the 'Read content' capability is active.",
+      "sourceIds": [
+        1
+      ]
+    },
+    {
+      "kind": "launch",
+      "title": "Confirm Composio Managed App Suitability",
+      "action": "Verify that Composio's managed Notion app meets your public distribution requirements, including branding and shared quotas.",
+      "detail": "For public audiences, Composio's managed app uses Composio's branding on the consent screen and operates under shared quotas. If custom branding or dedicated quotas are needed, you would switch to a custom Notion OAuth app later.",
+      "actor": "you",
+      "evidence": "documented",
+      "destination": "Composio Documentation",
+      "url": "https://docs.composio.dev/toolkits/notion",
+      "successCheck": "You confirm that the Composio-managed app's branding and operational characteristics are acceptable for your public audience.",
+      "recovery": "If the managed app is not suitable, consider setting up a custom Notion OAuth app within Composio to control branding and potentially quotas.",
+      "sourceIds": [
+        4
+      ]
+    }
+  ],
+  "blockers": [],
+  "unknowns": [
+    "Specific Notion API endpoint and expected successful response for reading pages.",
+    "Detailed app distribution requirements and review process for public Notion integrations beyond Composio's managed app."
+  ],
+  "agentBrief": "To set up Notion for reading user-selected pages using Composio's managed OAuth, the user needs to connect their Notion account through Composio. This involves signing in to Notion and approving access to Composio's pre-configured integration. Composio handles the OAuth flow, token storage, and refresh. The 'Read content' capability is required. For public distribution, confirm Composio's managed app branding and quotas are acceptable. If custom branding is needed, a custom Notion OAuth app can be configured later. No client ID/secret is needed for the managed setup. URLs: Composio Dashboard: https://platform.composio.dev/, Composio Notion Docs: https://docs.composio.dev/toolkits/notion",
+  "version": 1,
+  "request": {
+    "query": "Notion",
+    "useCase": "Read pages the user selects",
+    "audience": "test",
+    "auth": "managed"
+  },
+  "generatedAt": "2026-10-20T21:08:02.283Z",
+  "sources": [
+    {
+      "id": 1,
+      "title": "composio.dev",
+      "url": "https://composio.dev/auth/notion",
+      "evidence": "search-excerpt"
+    },
+    {
+      "id": 2,
+      "title": "docs.composio.dev",
+      "url": "https://docs.composio.dev/toolkits/notion",
+      "evidence": "search-excerpt"
+    },
+    {
+      "id": 3,
+      "title": "Notion (/kb/guide/toolkits-notion)",
+      "url": "https://docs.composio.dev/kb/guide/toolkits-notion",
+      "evidence": "search-excerpt"
+    },
+    {
+      "id": 4,
+      "title": "Notion MCP Server",
+      "url": "https://composio.dev/toolkits/notion",
+      "evidence": "search-excerpt"
+    }
+  ],
+  "run": {
+    "model": "google/gemini-2.5-flash",
+    "searches": 1,
+    "toolCalls": 1,
+    "costUsd": 0.01210732,
+    "durationMs": 13023
+  }
+}

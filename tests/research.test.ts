@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { gzipSync } from "node:zlib";
 import { createHmac } from "node:crypto";
-import { researchInput, safePublicUrl, validateEvidence, type GuideBody, type SavedGuide } from "../src/lib/research/schema";
+import { researchInput, safePublicUrl, validateEvidence, validateManagedEvidence, type GuideBody, type SavedGuide } from "../src/lib/research/schema";
 import { signGuide, verifyGuide } from "../src/lib/research/share";
 import { readLimitedText, RequestTooLarge } from "../src/lib/research/request";
 
@@ -51,4 +51,25 @@ test("request limit counts bytes and rejects bodies without a declared length",a
  assert.equal(await readLimitedText(new Request("https://app.test",{method:"POST",body:"hello"}),5),"hello");
  await assert.rejects(readLimitedText(new Request("https://app.test",{method:"POST",body:"💡💡"}),7),RequestTooLarge);
  await assert.rejects(readLimitedText(new Request("https://app.test",{method:"POST",body:"x",headers:{"content-length":"99999"}}),10),RequestTooLarge);
+});
+
+test('provider-specific OAuth endpoints are removed while Slack app settings remain usable',()=>{
+ for(const url of ['https://app.asana.com/-/oauth_authorize','https://app.asana.com/-/oauth_token','https://accounts.google.com/o/oauth2/v2/auth/authorize','https://discord.com/api/oauth2/token','https://slack.com/api/oauth.v2.access','https://api.linear.app/graphql']){
+  const copy=structuredClone(body);copy.steps[0].url=url;
+  assert.equal(validateEvidence(copy,[1]).steps[0].url,'',url);
+ }
+ const copy=structuredClone(body);copy.steps[0].url='https://api.slack.com/apps/';
+ assert.equal(validateEvidence(copy,[1]).steps[0].url,'https://api.slack.com/apps/');
+ copy.steps[0].url='https://developers.notion.com/guides/get-started/authorization';
+ assert.equal(validateEvidence(copy,[1]).steps[0].url,'https://developers.notion.com/guides/get-started/authorization');
+});
+
+
+test("managed auth cannot be claimed from only the provider's own OAuth docs",()=>{
+ const managed={...fixture.request,auth:"managed" as const};
+ assert.throws(()=>validateManagedEvidence(structuredClone(body),managed,fixture.sources));
+ const guide=structuredClone(body);
+ guide.steps.unshift({...guide.steps[0],kind:"connect",title:"Connect with Composio",sourceIds:[2]});
+ assert.doesNotThrow(()=>validateManagedEvidence(guide,managed,[...fixture.sources,{id:2,url:"https://docs.composio.dev/toolkits/slack"}]));
+ assert.throws(()=>validateManagedEvidence(guide,managed,[...fixture.sources,{id:2,url:"https://composio.dev.evil.org/toolkits/slack"}]));
 });

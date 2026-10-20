@@ -62,6 +62,31 @@ export function validateEvidence(body: GuideBody, sourceIds: number[]): GuideBod
   if (body.steps.some(s => s.evidence === "documented" && !s.sourceIds.length)) throw new Error("A documented step has no supporting source.");
   if (body.permissions.some(p => !p.sourceIds.length)) throw new Error("A permission has no supporting source.");
   if (body.officialWebsite && !safePublicUrl(body.officialWebsite)) body.officialWebsite = "";
-  body.steps = body.steps.map(s => ({ ...s, url: safePublicUrl(s.url) && !/^https:\/\/api\./.test(s.url) && !/\/oauth\/(token|authorize)(?:[/?#]|$)/.test(s.url) ? s.url : "" }));
+  body.steps = body.steps.map(s => ({ ...s, url: safeGuideDestination(s.url) ? s.url : "" }));
   return body;
+}
+
+// A documentation link can live on api.slack.com, but a parameterless OAuth
+// request is never a useful navigation button. Keep protocol calls in prose.
+export function safeGuideDestination(value: string): boolean {
+  if (!safePublicUrl(value)) return false;
+  const url = new URL(value);
+  const path = url.pathname.toLowerCase();
+  if (/^\/api(?:\/|$)/.test(path)) return false;
+  if (/(?:^|\/)(?:oauth(?:2|v2)?[_/-])?(?:token|authorize|access_token)(?:\/|$)/.test(path)) return false;
+  if (/\/oauth(?:2|v2)?\/(?:v\d+\/)?(?:access|token|authorize|auth)(?:\/|$)/.test(path)) return false;
+  if (url.hostname.startsWith("api.") && !(url.hostname === "api.slack.com" && /^\/(?:apps|docs|methods|scopes|authentication|concepts)(?:\/|$)/.test(path))) return false;
+  return true;
+}
+
+// A provider's own OAuth docs cannot establish Composio-managed support.
+// This is a minimum provenance check, not semantic proof of source claims.
+export function validateManagedEvidence(body: GuideBody, input: ResearchInput, sources: {id:number;url:string}[]): void {
+  if (input.auth !== "managed" || body.status !== "documented") return;
+  const managedIds = new Set(sources.filter(s => {
+    const host = new URL(s.url).hostname;
+    return host === "composio.dev" || host.endsWith(".composio.dev");
+  }).map(s => s.id));
+  const supported = body.steps.some(s => ["setup","connect"].includes(s.kind) && /composio/i.test(`${s.title} ${s.action} ${s.detail}`) && s.sourceIds.some(id => managedIds.has(id)));
+  if (!supported) throw new Error("Managed setup requires Composio evidence.");
 }

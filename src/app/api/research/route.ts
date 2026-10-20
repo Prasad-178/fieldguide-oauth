@@ -16,6 +16,7 @@ export async function POST(request: Request) {
   try { input = researchInput.parse(JSON.parse(raw)); }
   catch { return Response.json({error:"Add an app name and a short description of what you want to do."},{status:400}); }
   if (!process.env.OPENROUTER_API_KEY || !process.env.GUIDE_SIGNING_SECRET) return Response.json({error:"Live research is not configured. The site owner needs to finish setup."},{status:503});
+  if (request.signal.aborted) return new Response(null,{status:499});
   const now = Date.now();
   for (const [key,value] of limits) if (value.reset < now) limits.delete(key);
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
@@ -25,6 +26,7 @@ export async function POST(request: Request) {
   const controller = new AbortController();
   const abort = () => controller.abort();
   request.signal.addEventListener("abort",abort,{once:true});
+  if (request.signal.aborted) controller.abort();
   const timeout = setTimeout(abort,150000);
   const signal = controller.signal;
   const encoder = new TextEncoder();
