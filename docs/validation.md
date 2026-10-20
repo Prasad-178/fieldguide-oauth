@@ -116,3 +116,7 @@ Selected outputs are in `examples/asana.json`, `examples/slack-managed.json`, `e
 Browser checks: Asana retry, instructions/step completion, share creation and reload (0 checked in the shared copy), result-heading focus, same-tab invalid-token rejection, cancellation with both inputs preserved, offline error with inputs preserved, and GitHub's curated managed/public route. At 390×844 the generated guide had no horizontal overflow and its primary action ended at y=832; tapping it changed the checklist to 1/7. Earlier desktop viewport and reduced-motion checks above remain relevant.
 
 A full provider integration, independent fact-check of every generated claim, large repeated-trial benchmark, and developer usability study remain undone. We do not equate passing offline tests with verified OAuth setup or public-launch approval.
+
+### Production confirmation after the broader pass
+
+Code commit `8d1daee` deployed successfully as `dpl_8ePBhoJFjqoAmagTvXoYWo2525Y3`. On the production alias, Asana / read workspace tasks / external users / own app completed with six steps, eight sources, three reported searches/tool calls, 20.517 seconds and reported cost $0.03134339. The test success check was an HTTP 200 with returned task objects. In the production browser, an existing signed Asana link loaded with zero checklist progress; changing its fragment to an invalid token removed the old guide and displayed the invalid-link error. Direct missing/invalid-token verification requests both returned HTTP 400. No provider accounts or OAuth apps were changed.
