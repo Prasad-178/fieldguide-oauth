@@ -50,4 +50,11 @@ Manually checked the scope declaration, authorization URL, state/issuer checks, 
 
 Recorded outputs: [Discord production guide](examples/discord-live.json) and [Todoist managed guide](examples/todoist-managed.json). These are review artifacts, not runtime fallbacks. Local screenshot: `.data/walkthrough/production-discord-shared.jpg`.
 
-Submission receipt is recorded below after the form confirms it.
+## Submission receipt
+
+Submitted on 21 October 2026 through the assignment's Google Form. The confirmation page displayed: **“Your response has been recorded.”**
+
+Submitted the two-page `fieldguide-submission.pdf` with the public app/source links and final notes distinguishing executed walkthroughs from documentation checks and unverified behavior. No separate email was sent.
+
+Local receipt screenshot: `output/submission-confirmation.png`. Local submitted PDF: `output/pdf/fieldguide-submission.pdf`. Both are retained outside version control; the PDF was uploaded to the form.
+
