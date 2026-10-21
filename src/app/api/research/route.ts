@@ -3,7 +3,7 @@ import { research, ResearchError } from "@/lib/research/openrouter";
 import { signGuide } from "@/lib/research/share";
 import { readLimitedText } from "@/lib/research/request";
 
-export const maxDuration = 180;
+export const maxDuration = 300;
 const limits = new Map<string,{ count: number; reset: number }>();
 let active = 0;
 export async function POST(request: Request) {
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
   const abort = () => controller.abort();
   request.signal.addEventListener("abort",abort,{once:true});
   if (request.signal.aborted) controller.abort();
-  const timeout = setTimeout(abort,150000);
+  const timeout = setTimeout(abort,240000);
   const signal = controller.signal;
   const encoder = new TextEncoder();
   const stream = new ReadableStream({

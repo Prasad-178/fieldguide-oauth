@@ -16,3 +16,11 @@ function shapeOnly(value: unknown): unknown {
 }
 
 export const providerGuideSchema = shapeOnly(z.toJSONSchema(generationGuideBody, { target: "draft-7" })) as Record<string, unknown>;
+
+// OpenAI supports these bounds in structured outputs. Enforcing them during
+// generation avoids wasting entire drafts on citation/length corrections.
+export function guideSchemaForModel(model: string): Record<string, unknown> {
+  return model.startsWith('openai/')
+    ? z.toJSONSchema(generationGuideBody, { target: 'draft-7' })
+    : providerGuideSchema;
+}

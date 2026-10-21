@@ -7,6 +7,7 @@ import { research, ResearchError } from '../src/lib/research/openrouter';
 import { retrieveDocument } from '../src/lib/research/documents';
 import type { ResearchInput } from '../src/lib/research/schema';
 const cases:Record<string,ResearchInput>={
+ asana:{query:"https://asana.com",useCase:"Read tasks from a user’s workspace",audience:"public",auth:"own"},
  discord:{query:"Discord",useCase:"Read the connected user’s basic profile",audience:"test",auth:"own"},
  dropbox:{query:'Dropbox',useCase:'List files in my integration app folder',audience:'public',auth:'own'},
  spotify:{query:'Spotify',useCase:'Read the current user’s saved tracks',audience:'public',auth:'own'},
@@ -21,7 +22,7 @@ mkdirSync(dir,{recursive:true});
 const events:unknown[]=[];let pages=0;
 const started=Date.now();
 try{
- const guide=await research(cases[name],AbortSignal.timeout(150000),(stage,detail)=>{events.push({stage,detail,elapsedMs:Date.now()-started});console.log(detail);},async(url,signal)=>{
+ const guide=await research(cases[name],AbortSignal.timeout(240000),(stage,detail)=>{events.push({stage,detail,elapsedMs:Date.now()-started});console.log(detail);},async(url,signal)=>{
   const doc=await retrieveDocument(url,signal);
   writeFileSync(`${dir}/source-${++pages}.json`,JSON.stringify({requestedUrl:url,...doc},null,2));return doc;
  });

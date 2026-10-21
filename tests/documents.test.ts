@@ -1,6 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { extractDocument, focusDocument, publicIPv4, retrieveDocument } from '../src/lib/research/documents';
+import { extractDocument, focusDocument, publicIPv4, retrieveDocument, resolveMarkdownLinks } from '../src/lib/research/documents';
+
+test('Markdown references remain followable after documentation redirects',()=>{
+ const result=resolveMarkdownLinks('[Auth](/docs/auth) [Operation](../api/list#parameters) [External](https://api.provider.org/docs) [Unsafe](http://localhost/secrets)','https://docs.provider.org/guides/setup.md');
+ assert.match(result,/https:\/\/docs.provider.org\/docs\/auth/);
+ assert.match(result,/https:\/\/docs.provider.org\/api\/list#parameters/);
+ assert.match(result,/\[Unsafe\]\(http:\/\/localhost\/secrets\)/);
+});
 
 test('documentation reader excludes private, metadata, reserved and non-IPv4 addresses',()=>{
  for(const address of ['0.1.2.3','10.0.0.1','100.64.0.1','100.127.255.254','127.0.0.1','169.254.169.254','172.16.0.1','172.31.255.254','192.168.1.1','192.0.0.8','192.0.2.1','192.88.99.1','198.18.0.1','198.19.255.254','198.51.100.1','203.0.113.1','224.0.0.1','255.255.255.255','999.1.1.1','::1','::ffff:127.0.0.1','127.1'])assert.equal(publicIPv4(address),false,address);

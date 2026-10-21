@@ -16,7 +16,7 @@ type Client=Pick<OAuth2Client,'generateCodeVerifierAsync'|'generateAuthUrl'|'get
 type Session={created:number;state?:string;verifier?:string;client?:Client;connected?:boolean};
 const escape=(value:string)=>value.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 function page(res:ServerResponse, title:string, body:string, status=200) {
- res.writeHead(status,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','Referrer-Policy':'no-referrer','X-Content-Type-Options':'nosniff','Content-Security-Policy':"default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'"});
+ res.writeHead(status,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','Referrer-Policy':'same-origin','X-Content-Type-Options':'nosniff','Content-Security-Policy':"default-src 'none'; style-src 'unsafe-inline'; form-action 'self' https://accounts.google.com; frame-ancestors 'none'; base-uri 'none'"});
  res.end(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${escape(title)}</title><style>body{font:17px/1.6 system-ui;max-width:680px;margin:64px auto;padding:0 24px;color:#202020}button{cursor:pointer;background:#171717;color:white;border:0;border-radius:8px;padding:12px 20px;font:inherit}code{overflow-wrap:anywhere}small{color:#666}</style><h1>${escape(title)}</h1>${body}`);
 }
 function sessionId(req:IncomingMessage) {return /(?:^|;\s*)fg_walkthrough=([a-f0-9]{64})(?:;|$)/.exec(req.headers.cookie ?? '')?.[1];}
@@ -31,7 +31,7 @@ export function createWalkthrough(makeClient:()=>Client=defaultClient) {
  return createServer(async(req,res)=>{
   // Fixed Host and loopback bind prevent exposing the callback via DNS rebinding.
   if(req.headers.host!=='localhost:8765'){res.writeHead(403);res.end('Use the local walkthrough address.');return;}
-  res.setHeader('Cache-Control','no-store');res.setHeader('Referrer-Policy','no-referrer');
+  res.setHeader('Cache-Control','no-store');res.setHeader('Referrer-Policy','same-origin');
   for(const [id,s] of sessions)if(Date.now()-s.created>15*60_000)sessions.delete(id);
   let id=sessionId(req);let s=id?sessions.get(id):undefined;
   const url=new URL(req.url ?? '/',ORIGIN);

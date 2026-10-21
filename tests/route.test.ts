@@ -37,7 +37,7 @@ test('the server deadline aborts upstream work and returns a timeout message',as
   return new Promise<Response>((_resolve,reject)=>upstreamSignal?.addEventListener('abort',()=>reject(upstreamSignal?.reason),{once:true}));
  });
  const response=await POST(request());const result=response.text();
- t.mock.timers.tick(150001);
+ t.mock.timers.tick(240001);
  const text=await result;
  assert.equal(upstreamSignal?.aborted,true);assert.match(text,/Research took too long/);assert.doesNotMatch(text,/"type":"complete"/);
 });

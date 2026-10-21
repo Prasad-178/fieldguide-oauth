@@ -107,3 +107,11 @@ Automated test uses a fake Google client and verifies invalid Host/Origin reject
 Installing the local Google library surfaced existing npm audit findings in the eslint/shadcn development dependency chains. The report names no google-auth-library chain. No forced/downgrade audit fix was applied during this walkthrough.
 
 Validation for this continuation: 55 tests passed, ESLint passed, production build passed and `git diff --check` passed. The local callback homepage was opened in the browser; no Connect action was taken. No deployment, client creation, token exchange, mailbox operation or email send occurred.
+
+## Client creation and consent boundary - 21 October 2026
+
+With the user's approval, Create displayed **OAuth client created**. Download JSON completed despite the browser download observer timing out; the existing file was verified rather than downloading or creating another client. The JSON is stored outside the repository with directory mode 700 and file mode 600. It is excluded from commits, deployment and submission.
+
+The local test exposed two browser-specific harness issues: a stale session/strict-origin rejection and a CSP that blocked the intended redirect to Google. The harness retains Host and Origin checks, uses a same-origin referrer policy, and allows form redirects only to itself and accounts.google.com. A fresh browser run then reached account selection, the developer test-app notice and the exact permission screen: **View your email messages and settings**. Consent has not been granted, and token exchange/mailbox reading are not claimed.
+
+This checkpoint verifies client creation and the authorization request, not the completed mailbox flow. The managed route remains blocked by Google for the tested shared-client read scope.

@@ -1,12 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { providerGuideSchema } from '../src/lib/research/provider-schema';
+import { providerGuideSchema, guideSchemaForModel } from '../src/lib/research/provider-schema';
 import { guideBody } from '../src/lib/research/schema';
 import { completion, research, ResearchError } from '../src/lib/research/openrouter';
 import { validateDestinations, validateProtocolInstructions } from '../src/lib/research/quality';
 
 process.env.OPENROUTER_API_KEY='test-only-provider-key';
+test('OpenAI receives length and array bounds; Gemini retains the compatible shape-only schema',()=>{
+ const bounded=JSON.stringify(guideSchemaForModel('openai/gpt-5.4'));
+ assert.match(bounded,/maxLength/);assert.match(bounded,/maxItems/);
+ assert.deepEqual(guideSchemaForModel('google/gemini-3-flash-preview'),providerGuideSchema);
+});
 const response=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{'Content-Type':'application/json'}});
 
 test('provider schema retains required fields and enums without nested bounded-state constraints',()=>{
@@ -224,6 +229,16 @@ test('managed research reads current broker contracts even when search returns p
   return draftResult(body);
  });
  const guide=await research({...request,auth:'managed'},AbortSignal.timeout(1000),()=>{},async url=>{read.push(url);return {url,content:'Current primary documentation fixture.'};});
- assert.equal(read.length,4);assert.equal(guide.run.pageReads,4);
+ assert.equal(read.length,5);assert.equal(guide.run.pageReads,5);
  assert.equal(guide.status,'not-confirmed','broker docs alone must not silently change provider support to documented');
+});
+
+test('managed walkthroughs cannot call an undefined SDK session or mix languages',()=>{
+ const body=generatedFixture();
+ body.steps[0].instructions=["Call session.authorize('todoist').","Read redirectUrl or redirect_url."];
+ assert.throws(()=>validateProtocolInstructions(body),/undefined client or session/);
+ body.steps[0].instructions.unshift("import { Composio } from '@composio/core'; const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY }); const session = await composio.create('test-user');");
+ assert.throws(()=>validateProtocolInstructions(body),/mixes Python and TypeScript/);
+ body.steps[0].instructions[2]='Read redirectUrl.';
+ assert.doesNotThrow(()=>validateProtocolInstructions(body));
 });

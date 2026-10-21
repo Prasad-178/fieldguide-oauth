@@ -40,6 +40,15 @@ export function validateDestinations(body: GuideBody, evidence: { url: string; c
 }
 
 export function validateProtocolInstructions(body: GuideBody): void {
+  const actions=body.steps.flatMap(step=>step.instructions ?? []).join("\n");
+  if(body.status === "documented" && /session\.(?:authorize|execute)\(/.test(actions)) {
+    if(!/\b(?:new\s+)?Composio\s*\(/.test(actions) || !/\b(?:const\s+)?session\s*=/.test(actions)) {
+      throw new Error("The Composio SDK walkthrough uses an undefined client or session. Include the source-supported import, client constructor, server-side API key configuration and session creation as executable instructions.");
+    }
+    if(/\bredirect_url\b/.test(actions) && /\b(?:redirectUrl|waitForConnection|callbackUrl)\b/.test(actions)) {
+      throw new Error("The Composio SDK walkthrough mixes Python and TypeScript field names. Choose one language and use its documented methods and result fields consistently.");
+    }
+  }
   for(const step of body.steps) {
     const instructions=(step.instructions ?? []).join(" ");
     // Raw protocol parameters without their request destination are not runnable.

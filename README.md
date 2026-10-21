@@ -21,7 +21,7 @@ Set `OPENROUTER_API_KEY` in `.env.local`. Generate a private signing value with 
 npm run dev -- --port 3017
 ```
 
-Open http://localhost:3017. Samples work without credentials; live research requires the two server variables. `OPENROUTER_MODEL` defaults to `openai/gpt-5.4-mini`. No separate search API key or database is required.
+Open http://localhost:3017. Samples work without credentials; live research requires the two server variables. `OPENROUTER_MODEL` defaults to `openai/gpt-5.4`. No separate search API key or database is required.
 
 ## Try it
 
@@ -38,13 +38,13 @@ Use “Refresh research” within a sample to investigate its current requiremen
 `POST /api/research` validates context, then:
 
 1. Searches for the requested product, operation and approval requirements. An identity check asks for the official website when the product is ambiguous.
-2. Selects primary sources, reads up to four pages, and follows up to two relevant documentation links. The server checks public HTTPS destinations, pins DNS resolution to public IPv4 addresses and rechecks redirects. Managed requests also read three current Composio authentication references. It sends no cookies or credentials. Long documents keep the introduction and task-relevant excerpts.
+2. Selects primary sources, reads up to four pages, and follows up to two relevant documentation links. The server checks public HTTPS destinations, pins DNS resolution to public IPv4 addresses and rechecks redirects. Managed requests also read four current Composio session/authentication references. Markdown links are resolved against their final documentation URL. It sends no cookies or credentials. Long documents keep the introduction and task-relevant excerpts.
 3. Generates ordered instructions, an effort/ownership overview, success checks and recovery steps. Zod validates bounds, citation references and destination links.
 4. Reviews the draft against the page text for missing handoffs, unsupported claims and operation/launch gaps. One targeted search can retrieve up to two additional pages. Up to three drafts are allowed. Unresolved review findings become a `not-confirmed` result with the unsupported walkthrough withheld.
 
 This is model-assisted review, not proof of correctness. Search excerpts are distinguished from pages actually read. The same pipeline handles unfamiliar apps; recorded example outputs are never selected as hidden fallbacks.
 
-The client receives real stage changes over NDJSON. There is no fabricated percentage counter. A 150-second timeout, cancellation, input preservation and readable failures support recovery.
+The client receives real stage changes over NDJSON. There is no fabricated percentage counter. A 240-second timeout, cancellation, input preservation and readable failures support recovery.
 
 The server compresses and signs each guide. `/shared#guide=…` contains the snapshot; verification uses a POST request so the fragment is absent from server access-log URLs. Anyone with the link can read its contents. Signatures detect editing; they do not certify factual accuracy. Changing the signing secret invalidates existing links.
 
@@ -64,7 +64,7 @@ npm run lint
 npm run build
 ```
 
-Current status: **rebuild in progress; not submission-ready after hands-on feedback**. Production still has the earlier sample guides. See [the walkthrough findings](docs/walkthrough-rebuild.md).
+Current status and live-run evidence are recorded in [the readiness review](docs/readiness-review.md). See [the walkthrough findings](docs/walkthrough-rebuild.md) for what changed after hands-on feedback.
 
 Run an unfamiliar-app evaluation (uses paid OpenRouter requests, no account actions):
 
@@ -72,7 +72,7 @@ Run an unfamiliar-app evaluation (uses paid OpenRouter requests, no account acti
 node --env-file=.env.local --import tsx scripts/evaluate-research.mts dropbox
 ```
 
-Other cases: `discord`, `spotify`, `managed`, `ambiguous`, `unsupported`. Outputs and public source excerpts are saved under ignored `.data/evaluations/`. Inspect instruction quality separately from HTTP/JSON success.
+Other cases: `asana`, `discord`, `spotify`, `managed`, `ambiguous`, `unsupported`. Outputs and public source excerpts are saved under ignored `.data/evaluations/`. Inspect instruction quality separately from HTTP/JSON success.
 
 Read [the validation report](docs/validation.md), [developer UX research](docs/developer-ux-review.md), and actual generated [Linear](docs/examples/linear.json) / [Notion](docs/examples/notion.json) / [Airtable](docs/examples/airtable.json) examples. These JSON files are recorded outputs, not fallbacks used by the live endpoint.
 
@@ -85,7 +85,7 @@ Read [the validation report](docs/validation.md), [developer UX research](docs/d
 - This is a focused take-home, not a complete 100-provider library or production OAuth platform.
 - Pages may be inaccessible, incomplete or changed; task-relevant excerpts may omit context. The reader does not execute JavaScript and currently requires public IPv4. Model source selection and review can still be wrong. Citations do not prove correctness.
 - Live research is nondeterministic. Recorded successful examples are evidence of those runs, not a pass rate.
-- A dedicated Gmail managed auth configuration and Google Cloud test project were created during the browser walkthrough. Google blocked the managed read-only consent attempt; own-app identity, scope and test user are saved, and Gmail API is enabled. The local OAuth client form is prepared but not created. No client secret, mailbox grant, token exchange, API operation or approval was completed.
+- A dedicated Gmail managed auth configuration and Google Cloud test project were created during the browser walkthrough. Google blocked the managed read-only consent attempt; own-app identity, scope and test user are saved, and Gmail API is enabled. The web OAuth client was created, its credentials saved privately outside this repository, and its local callback reached the exact read-only Google consent screen. No mailbox grant, token exchange, mailbox operation or public approval was completed.
 - Sample guidance is dated 21 October 2026. Generated guides show their own timestamps; neither updates automatically after sharing.
 - In-process limits allow six research requests per IP per 15 minutes and two active requests per server instance. They are not a durable global quota. The deployed Vercel project also has a published firewall rule limiting POST /api/research to six requests per IP per 15 minutes. Tool/output caps reduce individual request cost; they do not impose an account spending cap.
 - Cancellation aborts the local provider request, but cannot guarantee that already-started provider work stops or is unbilled.

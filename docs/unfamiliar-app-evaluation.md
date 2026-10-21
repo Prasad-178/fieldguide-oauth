@@ -77,3 +77,19 @@ These iterations used different settings and are not a reliability estimate. A s
 No further paid runs were started after this batch. The next engineering work should target these concrete failures: (1) retrieve complete primary operation references when pages are script-rendered or empty; (2) produce one runnable, source-supported managed SDK example, with constructor and connection completion; (3) promote rollout eligibility and prerequisites into the overview and remove already-answered questions. Changing model effort alone did not solve these problems.
 
 Local verification: 54 automated tests, lint, production build and diff whitespace checks. API logs retain only diagnostic categories; full bounded validation checks are available in the local evaluation artifact, never sent to the browser or normal server logs. These checks establish implementation behavior, not provider instruction correctness.
+
+## Full-model upgrade and deployment - 21 October 2026
+
+The user requested a stronger model, so full `openai/gpt-5.4` replaces mini as the default for all research stages. Relative Markdown links now survive retrieval, current Composio session configuration is read, undefined SDK objects and mixed languages are rejected, and product identity is distinguished from a missing protocol reference. The runtime deadline is 240 seconds. OpenAI receives bounded structured-output schemas to avoid avoidable length/array corrections. See the official [structured output reference](https://developers.openai.com/api/docs/guides/structured-outputs).
+
+New trials (all retained under ignored `.data/evaluations/`):
+
+- `managed-1792572564756` (mini): failed structural validation after repairs; not a pass.
+- `dropbox-1792572565914` (mini): withheld after source review; operation contract and OAuth handoff remained incomplete.
+- `discord-1792572646739` (full): overcautious product-identity clarification; prompted the distinction between product identity and missing SDK documentation. Not accepted as an actionable result.
+- `managed-1792572645741` and `asana-1792572740412` (full, old deadline): timed out; prompted the bounded deadline increase.
+- `managed-1792572845938` and `asana-1792572934982` (full, new constraints/deadline): reached writing/review, then failed with OpenRouter 402. No successful final guide is claimed.
+
+No more paid trials were started after the credit failure. The account balance check showed about $1.25 remaining, insufficient for the rejected request, rather than a verified zero balance. Full-model quality is not established by changing the model name. Acceptance remains pending after credit restoration.
+
+58 automated tests, lint and production build passed. The rebuilt sample UI and model configuration were deployed and the public Gmail client-setup step was browser-checked. Production dependency audit: zero reported vulnerabilities; nine high development-tool findings remain. These results do not imply every generated instruction is correct.

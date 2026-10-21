@@ -32,6 +32,18 @@ export function extractDocument(html: string, url: string): string {
   return text.slice(0,120000);
 }
 
+// Documentation servers often return Markdown after content negotiation.
+// Resolve its real links too, otherwise the follow-up reader misses relative
+// OAuth, operation and distribution references that HTML extraction preserves.
+export function resolveMarkdownLinks(text: string, base: string): string {
+  return text.replace(/\]\(([^\s)]+)([^)]*)\)/g,(match,path:string,suffix:string)=>{
+    try {
+      const url=new URL(path,base);
+      return safePublicUrl(url.href) ? `](${url.href}${suffix})` : match;
+    } catch { return match; }
+  });
+}
+
 // Long toolkit pages often put the requested operation after dozens of tools.
 // Keep the introduction plus task-relevant sections instead of chopping the tail.
 export function focusDocument(text: string, task: string, limit=30000): string {
@@ -94,7 +106,7 @@ export async function retrieveDocument(value: string, parentSignal: AbortSignal)
       if(!page.location)throw new Error("Documentation redirect has no destination.");
       url=new URL(page.location,url);continue;
     }
-    const content = /html/i.test(page.type) ? extractDocument(page.text,url.href) : page.text.slice(0,120000);
+    const content = /html/i.test(page.type) ? extractDocument(page.text,url.href) : resolveMarkdownLinks(page.text.slice(0,120000),url.href);
     if(content.length<200)throw new Error("The page did not expose readable documentation.");
     return {url:url.href,content};
   }
