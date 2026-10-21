@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 
 function Sources({ids,guide}:{ids:number[];guide:SavedGuide}){return <span className="source-refs">{ids.map(id=>{const s=guide?.sources.find(s=>s.id===id);return s ? <a key={id} href={s.url} target="_blank" rel="noopener noreferrer" aria-label={`Source ${id}: ${s.title}`}>[{id}]</a>:null;})}</span>;}
 
-type Phase = "form" | "research" | "evidence" | "result" | "loading";
+type Phase = "form" | "research" | "evidence" | "review" | "result" | "loading";
 export default function ResearchWorkbench({ query = "", useCase = "", audience = "test", auth = "own", shared = false }: { query?: string; useCase?: string; audience?: ResearchInput["audience"]; auth?: ResearchInput["auth"]; shared?: boolean }) {
   const [input,setInput] = useState<ResearchInput>({query,useCase,audience,auth});
   const [phase,setPhase] = useState<Phase>(shared ? "loading" : "form");
@@ -28,7 +28,7 @@ export default function ResearchWorkbench({ query = "", useCase = "", audience =
   const [detail,setDetail] = useState("");
   const [step,setStep] = useState(0);
   const [done,setDone] = useState<number[]>([]);
-  const [panel,setPanel] = useState<"sources"|"launch"|"agent"|null>(null);
+  const [panel,setPanel] = useState<"sources"|"launch"|"agent"|"overview"|null>(null);
   const [shareOpen,setShareOpen] = useState(false);
   const [shareUrl,setShareUrl] = useState("");
   const [copyStatus,setCopyStatus] = useState("");
@@ -40,7 +40,7 @@ export default function ResearchWorkbench({ query = "", useCase = "", audience =
   const queryRef = useRef<HTMLInputElement|null>(null);
   const useCaseRef = useRef<HTMLInputElement|null>(null);
   const reduce = useReducedMotion();
-  const busy = phase === "research" || phase === "evidence";
+  const busy = phase === "research" || phase === "evidence" || phase === "review";
 
   useEffect(() => {
     if (!shared) return;
@@ -87,7 +87,7 @@ export default function ResearchWorkbench({ query = "", useCase = "", audience =
       function receive(line:string){
         if(!line.trim())return;
         const event=JSON.parse(line);
-        if(event.type === "progress"){setPhase(event.stage === "evidence" ? "evidence" : "research");setDetail(event.detail);}
+        if(event.type === "progress"){setPhase(event.stage === "review" ? "review" : event.stage === "evidence" ? "evidence" : "research");setDetail(event.detail);}
         if(event.type === "error")throw new Error(event.message);
         if(event.type === "complete"){
           const checked=savedGuide.parse(event.guide);setGuide(checked);setToken(event.token);setPhase("result");completed=true;
@@ -130,7 +130,7 @@ export default function ResearchWorkbench({ query = "", useCase = "", audience =
         <div className="research-orbit" aria-hidden="true"><motion.div animate={reduce ? {} : {rotate:360}} transition={{duration:12,repeat:Infinity,ease:"linear"}} className="orbit-ring"/><Globe2 className="size-7"/></div>
         <h1 className="mt-6">Investigating {input.query}</h1><p className="lede" role="status" aria-live="polite">{detail}</p>
         <div className="research-list">{["Search and read official docs","Build a guide from the evidence","Check sources and save a snapshot"].map((label,i)=>{
-          const index=phase === "research" ? 0 : 1;return <div key={label} className={cn("research-row",i===index&&"research-active")}><span className={cn("step-count",i<index&&"complete")}>{i<index ? <Check className="size-3.5"/> : i===index ? <LoaderCircle className="size-3.5 animate-spin"/> : i+1}</span><span>{label}</span></div>;
+          const index=phase === "research" ? 0 : phase === "evidence" ? 1 : 2;return <div key={label} className={cn("research-row",i===index&&"research-active")}><span className={cn("step-count",i<index&&"complete")}>{i<index ? <Check className="size-3.5"/> : i===index ? <LoaderCircle className="size-3.5 animate-spin"/> : i+1}</span><span>{label}</span></div>;
         })}</div>
         <div className="flex items-center justify-between"><span className="text-xs text-muted-foreground">{elapsed}s elapsed · no account actions</span><Button variant="ghost" onClick={cancel}><X/>Stop research</Button></div>
         <p className="mt-5 text-xs leading-relaxed text-muted-foreground">{elapsed>40 ? "Still working. Some documentation takes longer to retrieve; you can stop and narrow the task." : "We’ll show what we found and what still needs confirmation."}</p>
@@ -139,16 +139,18 @@ export default function ResearchWorkbench({ query = "", useCase = "", audience =
         <div className="guide-header"><div><Button variant="ghost" className="guide-back -ml-3" onClick={()=>{setPhase("form");setError("");}}><ArrowLeft/>Refine research</Button><div className="flex items-center gap-3"><span className="provider-symbol"><Globe2 className="size-5"/></span><div><h1 ref={resultHeading} tabIndex={-1}>{guide.appName} setup</h1><p className="mt-1 text-xs text-muted-foreground">{guide.request.audience === "test" ? "Testing" : "External users"} · {guide.request.auth === "managed" ? "Managed auth" : "Own OAuth app"}</p></div></div></div><Button variant="outline" onClick={shareGuide}><Link2/>Share</Button></div>
         <p className="research-summary">{guide.summary}</p>
         {guide.status!=="documented"&&<div className="launch-strip"><CircleAlert className="size-4 shrink-0"/><span>{guide.status==="needs-clarification" ? "Some details need clarification. Review the open questions before following these steps." : "OAuth setup is not confirmed. This guide explains what to investigate next."}</span></div>}
-        <div className="effort-row"><div><Clock3 className="size-4"/><span><span className="metric-label">Hands-on estimate</span>{guide.effort.handsOn}</span></div><div><ShieldCheck className="size-4"/><span><span className="metric-label">External waiting</span>{guide.effort.waiting}</span></div><Button variant="ghost" size="sm" onClick={()=>openPanel("launch")}>Details<ArrowUpRight/></Button></div>
+        <div className="effort-row"><div><Clock3 className="size-4"/><span><span className="metric-label">Hands-on estimate</span>{guide.effort.handsOn}</span></div><div><ShieldCheck className="size-4"/><span><span className="metric-label">External waiting</span>{guide.effort.waiting}</span></div><Button variant="ghost" size="sm" onClick={()=>openPanel("overview")}>Before you start<ArrowUpRight/></Button></div>
         <div className="guide-grid"><nav className="step-nav research-nav" aria-label="Research guide steps"><p className="eyebrow">YOUR PATH</p>{guide.steps.map((s,i)=><Button key={i} variant="ghost" className={cn("step-nav-button",step===i&&"active")} aria-label={`Step ${i+1}: ${s.title}`} aria-current={step===i?"step":undefined} onClick={()=>setStep(i)}>{step===i&&<motion.span layoutId="research-step" className="active-step-bg"/>}<span className={cn("step-count",done.includes(i)&&"complete")}>{done.includes(i)?<Check className="size-3.5"/>:i+1}</span><span className="relative research-step-label">{s.title}</span></Button>)}<div className="nav-footer">{done.length} of {guide.steps.length} checked<div className="progress-track"><motion.div animate={{width:`${done.length/guide.steps.length*100}%`}}/></div><p>Your checks · this session</p></div></nav>
         <div className="research-task-stack">
           <div className="research-task-card"><AnimatePresence mode="wait"><motion.article className="task-article" key={step} initial={{opacity:0,y:reduce?0:10}} animate={{opacity:1,y:0}} exit={{opacity:0}} transition={{duration:.18}}>
             <div className="task-scroll" role="region" aria-label="Step instructions" tabIndex={0}>
-          {step===0&&guide.prerequisites.length>0&&<div className="prerequisites"><p className="eyebrow">BEFORE YOU START</p>{guide.prerequisites.map((p,i)=><p key={i}><Check className="size-3.5 shrink-0"/><span>{p.title}<Sources guide={guide} ids={p.sourceIds}/></span></p>)}</div>}
+
             <div className="task-heading"><div className="flex items-center justify-between gap-3"><span className="eyebrow">STEP {step+1} OF {guide.steps.length}</span><Badge variant="secondary" className="font-normal">{current.actor==="agent"?"Agent can prepare":current.actor==="both"?"Agent + you":"Your action"}</Badge></div><h2>{current.title}</h2><p>{current.action}</p><p className="step-evidence">{current.evidence==="documented" ? "From documentation" : current.evidence==="recommendation" ? "Suggested approach" : "Needs confirmation"}<Sources guide={guide} ids={current.sourceIds}/></p></div>
             <div className="task-controls pt-0">
-              {current.url&&<Button variant="outline" asChild><a href={current.url} target="_blank" rel="noopener noreferrer">{current.destination||"Open instructions"}<ArrowUpRight/></a></Button>}
-              <Accordion type="single" collapsible className="mt-4"><AccordionItem value="instructions"><AccordionTrigger>Instructions & success check</AccordionTrigger><AccordionContent><p>{current.detail}</p><div className="success-check"><Check className="size-4 shrink-0"/><p>{current.successCheck}</p></div><p className="mt-3"><strong>If blocked:</strong> {current.recovery}</p></AccordionContent></AccordionItem></Accordion>
+              {current.url&&<Button variant="outline" asChild><a href={current.url} target="_blank" rel="noopener noreferrer">{current.destination && !/^https?:\/\//i.test(current.destination) ? current.destination : "Open setup instructions"}<ArrowUpRight/></a></Button>}
+              <ol className="walkthrough-actions">{(current.instructions ?? [current.detail]).map((instruction,i)=><li key={i}><span className="walkthrough-number" aria-hidden="true">{i+1}</span><p>{instruction}</p></li>)}</ol>
+              <div className="success-check"><Check className="size-4 shrink-0"/><p><strong className="block font-medium">You’re ready when</strong>{current.successCheck}</p></div>
+              <Accordion type="single" collapsible className="mt-3"><AccordionItem value="recovery"><AccordionTrigger>Stuck on this step?</AccordionTrigger><AccordionContent><p>{current.recovery}</p></AccordionContent></AccordionItem>{current.instructions&&<AccordionItem value="context"><AccordionTrigger>Why this matters</AccordionTrigger><AccordionContent><p>{current.detail}</p></AccordionContent></AccordionItem>}</Accordion>
             </div></div>
           </motion.article></AnimatePresence><div className="task-actions">
             <div className="task-bottom"><Button variant="ghost" onClick={()=>openPanel("sources")}><BookOpen/>Sources</Button><Button onClick={()=>{setDone(v=>[...new Set([...v,step])]);if(step<guide.steps.length-1)setStep(step+1);else openPanel("launch");}}>{step===guide.steps.length-1 ? "Check launch readiness" : done.includes(step) ? "Continue" : "Mark done & continue"}<ArrowRight/></Button></div>
@@ -160,12 +162,14 @@ export default function ResearchWorkbench({ query = "", useCase = "", audience =
       </section>}
     </main>
     <footer className="site-footer"><span>Know what to do next.</span><span>Sources first. Uncertainty visible.</span></footer>
-    <Sheet open={panel!==null} onOpenChange={v=>{if(!v)setPanel(null);}}><SheetContent className="overflow-y-auto sm:max-w-lg" onCloseAutoFocus={e=>{e.preventDefault();opener.current?.focus();}}><SheetHeader><SheetTitle>{panel==="sources"?"Research evidence":panel==="agent"?"Hand this to your agent":"Before you launch"}</SheetTitle><SheetDescription>{panel==="sources"?"Sources returned by live web research. Model synthesis can still be wrong.":panel==="agent"?"Preparation is separate from account changes and consent.":"A working test does not mean public launch is approved."}</SheetDescription></SheetHeader>
+    <Sheet open={panel!==null} onOpenChange={v=>{if(!v)setPanel(null);}}><SheetContent className="overflow-y-auto sm:max-w-lg" onCloseAutoFocus={e=>{e.preventDefault();opener.current?.focus();}}><SheetHeader><SheetTitle>{panel==="sources"?"Research evidence":panel==="agent"?"Hand this to your agent":panel==="overview"?"Before you start":"Before you launch"}</SheetTitle><SheetDescription>{panel==="sources"?"Sources returned by live web research. Model synthesis can still be wrong.":panel==="agent"?"Preparation is separate from account changes and consent.":panel==="overview"?"The work, waiting and decisions ahead.":"A working test does not mean public launch is approved."}</SheetDescription></SheetHeader>
       {guide&&<div className="panel-body">{panel==="sources"?<>
         <div className="evidence-note"><ShieldCheck className="size-4"/><p>The snapshot is signed by this app. That confirms its origin—not provider approval or factual correctness.</p></div>
-        {guide.sources.map(s=><a key={s.id} className="source-card" href={s.url} target="_blank" rel="noopener noreferrer"><span className="source-number">{s.id}</span><span><strong>{s.title}</strong><small>{new URL(s.url).hostname} · retrieved excerpt</small></span><ArrowUpRight className="size-4 shrink-0"/></a>)}
-        <Accordion type="single" collapsible><AccordionItem value="run"><AccordionTrigger>Run details</AccordionTrigger><AccordionContent><p>Model: {guide.run.model}</p><p>{guide.run.searches} {guide.run.searches === 1 ? "search" : "searches"} · {guide.run.toolCalls} tool {guide.run.toolCalls === 1 ? "call" : "calls"} · {Math.round(guide.run.durationMs/1000)} seconds</p><p>Generated: {guide.generatedAt}</p><p>Retrieved source excerpts informed the guide. No account login, app registration or test API call was performed. Source support is assigned by the model, not independently proven.</p></AccordionContent></AccordionItem></Accordion><Button variant="outline" onClick={download}><Download/>Download guide JSON</Button>
+        {guide.sources.map(s=><a key={s.id} className="source-card" href={s.url} target="_blank" rel="noopener noreferrer"><span className="source-number">{s.id}</span><span><strong>{s.title}</strong><small>{new URL(s.url).hostname} · {s.evidence === "retrieved" ? "page read" : "search excerpt"}</small></span><ArrowUpRight className="size-4 shrink-0"/></a>)}
+        <Accordion type="single" collapsible><AccordionItem value="run"><AccordionTrigger>Run details</AccordionTrigger><AccordionContent><p>Model: {guide.run.model}</p><p>{guide.run.searches} {guide.run.searches === 1 ? "search" : "searches"} · {guide.run.toolCalls} tool {guide.run.toolCalls === 1 ? "call" : "calls"} · {Math.round(guide.run.durationMs/1000)} seconds{guide.run.pageReads!==undefined&&` · ${guide.run.pageReads} pages read`}</p><p>Generated: {guide.generatedAt}</p><p>Retrieved source excerpts informed the guide. No account login, app registration or test API call was performed. Source support is assigned by the model, not independently proven.</p></AccordionContent></AccordionItem></Accordion><Button variant="outline" onClick={download}><Download/>Download guide JSON</Button>
       </>:panel==="agent"?<><textarea readOnly value={guide.agentBrief} className="agent-brief" aria-label="Agent handoff instructions"/><Button onClick={()=>copy(guide.agentBrief)}><Copy/>{copyStatus==="Copied"?"Copied":"Copy instructions"}</Button><p role="status" className="text-xs text-muted-foreground">{copyStatus||"Do not paste keys or tokens into an agent chat."}</p></>:<>
+        {guide.overview&&<><div className="panel-section"><Badge variant="secondary">{guide.overview.difficulty}</Badge><p className="mt-3">{guide.overview.reason}</p></div><div className="panel-section"><h3>Your agent can prepare</h3><p>{guide.overview.agentCan}</p></div><div className="panel-section"><h3>You take over for</h3><p>{guide.overview.youHandle}</p></div></>}
+        {panel==="overview"&&guide.prerequisites.length>0&&<div className="panel-section"><h3>Have these ready</h3>{guide.prerequisites.map((p,i)=><p key={i}><strong>{p.title}</strong><br/>{p.detail}<Sources guide={guide} ids={p.sourceIds}/></p>)}</div>}
         <div className="panel-section"><h3>Effort & waiting</h3><p>{guide.effort.handsOn}</p><p>{guide.effort.waiting}</p><small>{guide.effort.basis}<Sources guide={guide} ids={guide.effort.sourceIds}/></small></div>
         {guide.permissions.length>0&&<div className="panel-section"><h3>Requested permissions</h3>{guide.permissions.map((p,i)=><p key={i}><code>{p.name}</code><br/>{p.reason}<Sources guide={guide} ids={p.sourceIds}/></p>)}</div>}
         {guide.blockers.map((b,i)=><div className="panel-section" key={i}><h3>{b.title}</h3><p>{b.detail}<Sources guide={guide} ids={b.sourceIds}/></p></div>)}

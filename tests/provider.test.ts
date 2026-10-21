@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { providerGuideSchema } from '../src/lib/research/provider-schema';
 import { guideBody } from '../src/lib/research/schema';
 import { completion, research, ResearchError } from '../src/lib/research/openrouter';
+import { validateDestinations, validateProtocolInstructions } from '../src/lib/research/quality';
 
 process.env.OPENROUTER_API_KEY='test-only-provider-key';
 const response=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{'Content-Type':'application/json'}});
@@ -36,12 +37,17 @@ test('provider errors inside HTTP 200 responses are not treated as successful co
 
 test('simplifying provider constraints does not let oversized guides pass runtime validation',async t=>{
  const fixture=JSON.parse(readFileSync(new URL('../docs/examples/linear.json',import.meta.url),'utf8'));
- const body=Object.fromEntries(Object.keys(guideBody.shape).map(key=>[key,fixture[key]]));
+ const body=Object.assign(Object.fromEntries(Object.keys(guideBody.shape).map(key=>[key,fixture[key]])),{overview:{difficulty:'Some setup',reason:'OAuth registration and a test are needed.',agentCan:'Prepare callback and test code.',youHandle:'Authorize the test account.'},steps:fixture.steps.map((step:Record<string,unknown>)=>({...step,instructions:['Follow the documented setup instruction.']}))});
  body.summary='x'.repeat(301);
  let calls=0;
- t.mock.method(globalThis,'fetch',async()=>++calls===1?response({choices:[{message:{content:'Source notes',annotations:[{url_citation:{url:'https://linear.app/developers',title:'Linear',content:'Official documentation excerpt'}}]}}],usage:{server_tool_use_details:{web_search_requests:1,tool_calls_executed:1}}}):response({choices:[{message:{content:JSON.stringify(body)}}]}));
- await assert.rejects(research({query:'Linear',useCase:'Read issues',audience:'test',auth:'own'},AbortSignal.timeout(1000),()=>{}),/could not pass our checks/);
- assert.equal(calls,3);
+ t.mock.method(globalThis,'fetch',async()=>{
+  calls++;
+  if(calls===1)return sourceResult();
+  if(calls===2)return draftResult({sourceIds:[1],gaps:[],identity:"confirmed",identityReason:"The official Linear documentation matches the requested product."});
+  return draftResult(body);
+ });
+ await assert.rejects(research({query:'Linear',useCase:'Read issues',audience:'test',auth:'own'},AbortSignal.timeout(1000),()=>{},readFixture),/could not pass our checks/);
+ assert.equal(calls,5);
 });
 
 for (const [status,pattern] of [[401,/authenticate/],[402,/credits/],[403,/does not allow/],[429,/busy/],[500,/unavailable/],[503,/unavailable/]] as const) {
@@ -98,17 +104,79 @@ test('null JSON from a provider is handled as an invalid response',async t=>{
 });
 
 
-test('one invalid draft is repaired against the same evidence, and both costs are counted',async t=>{
+function generatedFixture() {
  const fixture=JSON.parse(readFileSync(new URL('../docs/examples/linear.json',import.meta.url),'utf8'));
- const body=Object.fromEntries(Object.keys(guideBody.shape).map(key=>[key,fixture[key]]));
+ const body=Object.assign(Object.fromEntries(Object.keys(guideBody.shape).map(key=>[key,fixture[key]])),{overview:{difficulty:'Some setup',reason:'OAuth registration and a test are needed.',agentCan:'Prepare callback and test code.',youHandle:'Authorize the test account.'},steps:fixture.steps.map((step:Record<string,unknown>)=>({...step,instructions:['Follow the documented setup instruction.']}))});
  for(const row of [...body.steps,...body.permissions,...body.prerequisites,...body.blockers,body.effort])row.sourceIds=[1];
- const invalid=structuredClone(body);invalid.steps[0].sourceIds=[15];let calls=0;
+ for(const step of body.steps)step.url='https://linear.app/developers';
+ return guideBody.parse(body);
+}
+const sourceResult=()=>response({choices:[{message:{content:'Notes',annotations:[{url_citation:{url:'https://linear.app/developers',content:'Documentation'}}]}}],usage:{cost:.01,server_tool_use_details:{web_search_requests:1,tool_calls_executed:1}}});
+const draftResult=(body:unknown)=>response({choices:[{message:{content:JSON.stringify(body)}}],usage:{cost:.01}});
+const readFixture=async()=>({url:'https://linear.app/developers',content:'Official documentation fixture for source pipeline tests.'});
+const request={query:'Linear',useCase:'Read issues',audience:'test',auth:'own'} as const;
+
+test('one invalid draft is repaired against the same evidence, reviewed, and every cost is counted',async t=>{
+ const body=generatedFixture();const invalid=structuredClone(body);invalid.steps[0].sourceIds=[15];let calls=0;
  t.mock.method(globalThis,'fetch',async()=>{
   calls++;
-  return calls===1?response({choices:[{message:{content:'Notes',annotations:[{url_citation:{url:'https://linear.app/developers',content:'Documentation'}}]}}],usage:{cost:.01,server_tool_use_details:{web_search_requests:1}}}):response({choices:[{message:{content:JSON.stringify(calls===2?invalid:body)}}],usage:{cost:.01}});
+  if(calls===1)return sourceResult();
+  if(calls===2)return draftResult({sourceIds:[1],gaps:[],identity:"confirmed",identityReason:"The official Linear documentation matches the requested product."});
+  if(calls===5)return draftResult({issues:[]});
+  return draftResult(calls===3?invalid:body);
  });
- const guide=await research({query:'Linear',useCase:'Read issues',audience:'test',auth:'own'},AbortSignal.timeout(1000),()=>{});
- assert.equal(calls,3);assert.equal(guide.run.costUsd,.03);assert.deepEqual(guide.steps[0].sourceIds,[1]);
+ const guide=await research(request,AbortSignal.timeout(1000),()=>{},readFixture);
+ assert.equal(calls,5);assert.equal(guide.run.costUsd,.05);assert.equal(guide.run.toolCalls,1);assert.equal(guide.run.pageReads,1);assert.deepEqual(guide.steps[0].sourceIds,[1]);
+});
+
+test('failed documentation fetches cannot produce a documented guide from search snippets',async t=>{
+ let calls=0;
+ t.mock.method(globalThis,'fetch',async()=>{
+  calls++;
+  if(calls===1)return sourceResult();
+  if(calls===2)return draftResult({sourceIds:[1],gaps:[],identity:"confirmed",identityReason:"The official Linear documentation matches the requested product."});
+  return draftResult(generatedFixture());
+ });
+ await assert.rejects(research(request,AbortSignal.timeout(1000),()=>{},async()=>{throw new Error('Page unavailable');}),/could not pass our checks/);
+ assert.equal(calls,5);
+});
+
+test('semantic review researches a missing detail, then repairs the draft',async t=>{
+ const body=generatedFixture();let calls=0;let reviews=0;
+ t.mock.method(globalThis,'fetch',async(_url:unknown,init?:RequestInit)=>{
+  calls++;const sent=JSON.parse(init!.body as string);const schema=sent.response_format?.json_schema?.name;
+  if(!schema)return sourceResult();
+  if(schema==='documentation_selection')return draftResult({sourceIds:[1],gaps:[],identity:'confirmed',identityReason:'Exact product found.'});
+  if(schema==='walkthrough_review')return draftResult({issues:++reviews===1?['The token exchange omits the required encoding and grant_type.']:[]});
+  if(reviews)assert.match(init!.body as string,/grant_type/);
+  return draftResult(body);
+ });
+ const guide=await research(request,AbortSignal.timeout(1000),()=>{},readFixture);
+ assert.equal(calls,7);assert.equal(guide.appName,body.appName);assert.equal(guide.status,'documented');assert.equal(guide.run.searches,2);
+});
+
+test('repeated failed source reviews do not publish the flawed walkthrough',async t=>{
+ let calls=0;
+ t.mock.method(globalThis,'fetch',async(_url:unknown,init?:RequestInit)=>{
+  calls++;const schema=JSON.parse(init!.body as string).response_format?.json_schema?.name;
+  if(!schema)return sourceResult();
+  if(schema==='documentation_selection')return draftResult({sourceIds:[1],gaps:[],identity:'confirmed',identityReason:'Exact product found.'});
+  if(schema==='walkthrough_review')return draftResult({issues:['The claimed approval duration has no primary source.']});
+  return draftResult(generatedFixture());
+ });
+ const guide=await research(request,AbortSignal.timeout(1000),()=>{},readFixture);
+ assert.equal(guide.status,'not-confirmed');assert.equal(guide.steps[0].kind,'clarify');assert.match(guide.unknowns[0],/approval duration/);
+ assert.equal(calls,9);
+});
+
+test('plausible but unevidenced destinations are rejected',()=>{
+ const body=generatedFixture();
+ validateDestinations(body,[{url:'https://linear.app/developers',content:'Docs'}]);
+ body.steps[0].url='https://linear.app/settings/invented';
+ assert.throws(()=>validateDestinations(body,[{url:'https://linear.app/developers',content:'Docs'}]),/absent/);
+ validateDestinations(body,[{url:'https://linear.app/developers',content:'Open [settings](https://linear.app/settings/invented).'}]);
+ body.steps[0].url='https://linear.app/settings/invented/extra';
+ assert.throws(()=>validateDestinations(body,[{url:'https://linear.app/developers',content:'Open https://linear.app/settings/invented'}]),/absent/);
 });
 
 test('aborting while reading the provider body remains a cancellation',async t=>{
@@ -118,4 +186,20 @@ test('aborting while reading the provider body remains a cancellation',async t=>
   result.json=async()=>{controller.abort();throw controller.signal.reason;};return result;
  });
  await assert.rejects(completion({},controller.signal,'guide'),(error:unknown)=>error instanceof DOMException && error.name==='AbortError');
+});
+
+
+test('ambiguous app identity asks for the official website without inventing setup steps',async t=>{
+ let calls=0;let reads=0;
+ t.mock.method(globalThis,'fetch',async()=>++calls===1?sourceResult():draftResult({sourceIds:[],gaps:[],identity:'ambiguous',identityReason:'Multiple products have this name.'}));
+ const guide=await research({...request,query:'Flow'},AbortSignal.timeout(1000),()=>{},async()=>{reads++;return readFixture();});
+ assert.equal(calls,2);assert.equal(reads,0);assert.equal(guide.status,'needs-clarification');assert.equal(guide.steps[0].kind,'clarify');assert.match(guide.summary,/official website/);
+});
+
+
+test('raw OAuth parameters must include the full request endpoint in visible instructions',()=>{
+ const body=generatedFixture();body.steps[0].instructions=['Set response_type to code.','Use the registered redirect_uri.'];
+ assert.throws(()=>validateProtocolInstructions(body),/full request URL/);
+ body.steps[0].instructions.unshift('Open https://provider.org/oauth/authorize with these query parameters.');
+ assert.doesNotThrow(()=>validateProtocolInstructions(body));
 });

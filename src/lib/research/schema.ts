@@ -29,6 +29,11 @@ export const guideBody = z.object({
   officialWebsite: z.string().max(300),
   status: z.enum(["documented", "needs-clarification", "not-confirmed"]),
   summary: short,
+  // Optional for older signed snapshots; required for every newly generated guide.
+  overview: z.object({
+    difficulty: z.enum(["Straightforward", "Some setup", "Complex", "Not confirmed"]),
+    reason: short, agentCan: short, youHandle: short,
+  }).optional(),
   effort: z.object({ handsOn: short, waiting: short, basis: short, sourceIds: refs }),
   prerequisites: z.array(z.object({ title: short, detail: short, sourceIds: refs })).max(5),
   permissions: z.array(z.object({ name: z.string().max(100), reason: short, sourceIds: refs })).max(6),
@@ -39,18 +44,22 @@ export const guideBody = z.object({
     evidence: z.enum(["documented", "recommendation", "unknown"]),
     destination: z.string().max(90), url: z.string().max(500),
     successCheck: short, recovery: short, sourceIds: refs,
-  })).min(1).max(7),
+    instructions: z.array(short).min(1).max(8).optional(),
+  })).min(1).max(12),
   blockers: z.array(z.object({ title: short, detail: text, sourceIds: refs })).max(5),
   unknowns: z.array(short).max(6),
   agentBrief: z.string().min(1).max(1800),
 }).strict();
 export type GuideBody = z.infer<typeof guideBody>;
+export const generationGuideBody = guideBody.required({ overview: true }).extend({
+  steps: z.array(guideBody.shape.steps.element.required({ instructions: true })).min(1).max(12),
+});
 export const savedGuide = guideBody.extend({
   version: z.literal(1),
   request: researchInput,
   generatedAt: z.string().datetime(),
   sources: z.array(sourceSchema).min(1).max(15),
-  run: z.object({ model: z.string(), searches: z.number(), toolCalls: z.number(), costUsd: z.number().nullable(), durationMs: z.number() }),
+  run: z.object({ model: z.string(), searches: z.number(), toolCalls: z.number(), pageReads:z.number().int().min(0).max(8).optional(), costUsd: z.number().nullable(), durationMs: z.number() }),
 });
 export type SavedGuide = z.infer<typeof savedGuide>;
 
@@ -62,7 +71,7 @@ export function validateEvidence(body: GuideBody, sourceIds: number[]): GuideBod
   if (body.steps.some(s => s.evidence === "documented" && !s.sourceIds.length)) throw new Error("A documented step has no supporting source.");
   if (body.permissions.some(p => !p.sourceIds.length)) throw new Error("A permission has no supporting source.");
   if (body.officialWebsite && !safePublicUrl(body.officialWebsite)) body.officialWebsite = "";
-  body.steps = body.steps.map(s => ({ ...s, url: safeGuideDestination(s.url) ? s.url : "" }));
+  body.steps = body.steps.map(s => ({ ...s, actor: s.actor === "agent" && ["connect","test"].includes(s.kind) ? "both" : s.actor, url: safeGuideDestination(s.url) ? s.url : "" }));
   return body;
 }
 

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { guideBody } from "./schema";
+import { generationGuideBody } from "./schema";
 
 // Gemini can reject the cross-product of nested array and scalar constraints.
 // Ask it for the shape; enforce every original bound with guideBody.parse below.
@@ -15,4 +15,4 @@ function shapeOnly(value: unknown): unknown {
   return value;
 }
 
-export const providerGuideSchema = shapeOnly(z.toJSONSchema(guideBody, { target: "draft-7" })) as Record<string, unknown>;
+export const providerGuideSchema = shapeOnly(z.toJSONSchema(generationGuideBody, { target: "draft-7" })) as Record<string, unknown>;

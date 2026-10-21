@@ -169,3 +169,9 @@ h1:focus{outline:none}
 @media(max-width:700px){.skeleton-nav{display:none}.skeleton-guide-heading .w-64{width:180px}.skeleton-task{padding:20px}}
 @media(prefers-reduced-motion:reduce){.skeleton{animation:none}}
 .task-scroll:focus-visible{outline:2px solid #a1a1aa;outline-offset:-3px}
+
+/* The work itself stays visible; explanation and recovery are secondary. */
+.walkthrough-actions{list-style:none;padding:0;margin:22px 0;display:grid;gap:18px}
+.walkthrough-actions li{display:flex;gap:12px;align-items:flex-start;font-size:14px;line-height:1.65}
+.walkthrough-actions p{margin:0;overflow-wrap:anywhere;white-space:pre-line}
+.walkthrough-number{display:inline-flex;flex:none;align-items:center;justify-content:center;width:23px;height:23px;margin-top:1px;border:1px solid var(--border);border-radius:50%;color:var(--muted-foreground);font-size:11px;font-variant-numeric:tabular-nums}

@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { gzipSync } from "node:zlib";
 import { createHmac } from "node:crypto";
-import { researchInput, safePublicUrl, validateEvidence, validateManagedEvidence, type GuideBody, type SavedGuide } from "../src/lib/research/schema";
+import { researchInput, generationGuideBody, savedGuide, safePublicUrl, validateEvidence, validateManagedEvidence, type GuideBody, type SavedGuide } from "../src/lib/research/schema";
 import { signGuide, verifyGuide } from "../src/lib/research/share";
 import { readLimitedText, RequestTooLarge } from "../src/lib/research/request";
 
@@ -72,4 +72,20 @@ test("managed auth cannot be claimed from only the provider's own OAuth docs",()
  guide.steps.unshift({...guide.steps[0],kind:"connect",title:"Connect with Composio",sourceIds:[2]});
  assert.doesNotThrow(()=>validateManagedEvidence(guide,managed,[...fixture.sources,{id:2,url:"https://docs.composio.dev/toolkits/slack"}]));
  assert.throws(()=>validateManagedEvidence(guide,managed,[...fixture.sources,{id:2,url:"https://composio.dev.evil.org/toolkits/slack"}]));
+});
+
+
+test("new guides require an overview and concrete instructions while old snapshots remain readable",()=>{
+ assert.equal(savedGuide.safeParse(fixture).success,true);
+ assert.equal(generationGuideBody.safeParse(body).success,false);
+ const upgraded={...body,overview:{difficulty:"Some setup",reason:"Register an app before connecting a test user.",agentCan:"Prepare code.",youHandle:"Review permissions and consent."},steps:body.steps.map(step=>({...step,instructions:["Open the provider settings page.","Follow the documented operation test."]}))};
+ assert.equal(generationGuideBody.safeParse(upgraded).success,true);
+ assert.equal(generationGuideBody.safeParse({...upgraded,steps:upgraded.steps.map(step=>({...step,instructions:[]}))}).success,false);
+ assert.equal(generationGuideBody.safeParse({...upgraded,steps:Array(13).fill(upgraded.steps[0])}).success,false);
+});
+
+
+test('connection and operation tests show human involvement even when an agent prepares the code',()=>{
+ const copy=structuredClone(body);copy.steps[0].actor='agent';
+ assert.equal(validateEvidence(copy,[1]).steps[0].actor,'both');
 });

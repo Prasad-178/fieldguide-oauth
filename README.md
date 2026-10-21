@@ -8,7 +8,7 @@ Built for the Composio APM integrations take-home with Next.js, React, TypeScrip
 
 ## Run locally
 
-Requires Node.js 20.9+ (validated on Node 24) and an OpenRouter account with access to the selected model and web tools.
+Requires Node.js 20.18.1+ (validated on Node 24) and an OpenRouter account with access to the selected model and web tools.
 
 ```sh
 npm ci
@@ -21,7 +21,7 @@ Set `OPENROUTER_API_KEY` in `.env.local`. Generate a private signing value with 
 npm run dev -- --port 3017
 ```
 
-Open http://localhost:3017. Samples work without credentials; live research requires the two server variables. `OPENROUTER_MODEL` defaults to `google/gemini-2.5-flash`. No separate search API key or database is required.
+Open http://localhost:3017. Samples work without credentials; live research requires the two server variables. `OPENROUTER_MODEL` defaults to `openai/gpt-5.4-mini`. No separate search API key or database is required.
 
 ## Try it
 
@@ -35,10 +35,14 @@ Use “Refresh research” within a sample to investigate its current requiremen
 
 ## How it works
 
-`POST /api/research` validates context, then runs two server-side OpenRouter stages (with at most one additional corrected guide draft):
+`POST /api/research` validates context, then:
 
-1. **Investigate:** the model uses web search/fetch with bounded tool calls. Returned URL annotations form the evidence registry. A run without a reported search or usable source excerpts is rejected.
-2. **Structure:** the model writes a typed guide from those excerpts. The provider receives a simplified shape schema; Zod enforces the full response bounds afterward; documented steps and permissions need source references, and a documented guide must include a controlled test and launch check. An invalid draft gets one correction attempt against the same evidence; a second invalid draft is rejected. Managed setup additionally requires a Composio-cited setup or connection step.
+1. Searches for the requested product, operation and approval requirements. An identity check asks for the official website when the product is ambiguous.
+2. Selects primary sources, reads up to four pages, and follows up to two relevant documentation links. The server checks public HTTPS destinations, pins DNS resolution to public IPv4 addresses and rechecks redirects. It sends no cookies or credentials. Long documents keep the introduction and task-relevant excerpts.
+3. Generates ordered instructions, an effort/ownership overview, success checks and recovery steps. Zod validates bounds, citation references and destination links.
+4. Reviews the draft against the page text for missing handoffs, unsupported claims and operation/launch gaps. One targeted search can retrieve up to two additional pages. Up to three drafts are allowed. Unresolved review findings become a `not-confirmed` result with the unsupported walkthrough withheld.
+
+This is model-assisted review, not proof of correctness. Search excerpts are distinguished from pages actually read. The same pipeline handles unfamiliar apps; recorded example outputs are never selected as hidden fallbacks.
 
 The client receives real stage changes over NDJSON. There is no fabricated percentage counter. A 150-second timeout, cancellation, input preservation and readable failures support recovery.
 
@@ -60,6 +64,16 @@ npm run lint
 npm run build
 ```
 
+Current status: **rebuild in progress; not submission-ready after hands-on feedback**. Production still has the earlier sample guides. See [the walkthrough findings](docs/walkthrough-rebuild.md).
+
+Run an unfamiliar-app evaluation (uses paid OpenRouter requests, no account actions):
+
+```sh
+node --env-file=.env.local --import tsx scripts/evaluate-research.mts dropbox
+```
+
+Other cases: `discord`, `spotify`, `managed`, `ambiguous`, `unsupported`. Outputs and public source excerpts are saved under ignored `.data/evaluations/`. Inspect instruction quality separately from HTTP/JSON success.
+
 Read [the validation report](docs/validation.md), [developer UX research](docs/developer-ux-review.md), and actual generated [Linear](docs/examples/linear.json) / [Notion](docs/examples/notion.json) / [Airtable](docs/examples/airtable.json) examples. These JSON files are recorded outputs, not fallbacks used by the live endpoint.
 
 ## Deployment
@@ -69,9 +83,9 @@ Read [the validation report](docs/validation.md), [developer UX research](docs/d
 ## Limitations
 
 - This is a focused take-home, not a complete 100-provider library or production OAuth platform.
-- Search excerpts can omit important details; the model can still misinterpret a source. Citation-ID checks do not prove a claim is supported. Verify provider requirements before acting.
+- Pages may be inaccessible, incomplete or changed; task-relevant excerpts may omit context. The reader does not execute JavaScript and currently requires public IPv4. Model source selection and review can still be wrong. Citations do not prove correctness.
 - Live research is nondeterministic. Recorded successful examples are evidence of those runs, not a pass rate.
-- No OAuth registration, token exchange, account connection or approval was completed. GitHub's registration form was inspected read-only.
+- A dedicated Gmail managed auth configuration and Google Cloud test project were created during the browser walkthrough. Google blocked the managed read-only consent attempt; own-app setup paused at the User Data Policy agreement. No client secret, mailbox grant, token exchange, API operation or approval was completed.
 - Sample guidance is dated 20 October 2026. Generated guides show their own timestamps; neither updates automatically after sharing.
 - In-process limits allow six research requests per IP per 15 minutes and two active requests per server instance. They are not a durable global quota. The deployed Vercel project also has a published firewall rule limiting POST /api/research to six requests per IP per 15 minutes. Tool/output caps reduce individual request cost; they do not impose an account spending cap.
 - Cancellation aborts the local provider request, but cannot guarantee that already-started provider work stops or is unbilled.

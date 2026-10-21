@@ -3,7 +3,7 @@
 Reviewed 21 October 2026 against the original live Notion brief:
 https://composio.notion.site/APM-Integrations-Take-home-Assignment-3f9f261a6dfe81489ee5e3643151f9d6
 
-Status: ready for Prasad's hands-on review; submission packaging and reviewer source access remain pending. Nothing submitted.
+Status: **not submission-ready**. Prasad's hands-on Gmail review found missing links and insufficient instructions. The earlier assessment below describes implementation coverage, not validated usability. A walkthrough and unfamiliar-app research rebuild is in progress; see `walkthrough-rebuild.md`. Nothing submitted.
 
 | Requirement | Current evidence | Assessment |
 | --- | --- | --- |
