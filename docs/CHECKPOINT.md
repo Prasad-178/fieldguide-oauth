@@ -1,6 +1,6 @@
 # Fieldguide resume checkpoint — 21 October 2026
 
-Paused at the owner's explicit request. No assignment submission occurred. Do not resume paid calls until asked to continue.
+Historical pause checkpoint. The owner resumed work; current model, deployment and verification are in [readiness-review.md](readiness-review.md). The notes below describe the state at the pause, not the current release.
 
 ## Saved work
 
