@@ -57,4 +57,3 @@ Submitted on 21 October 2026 through the assignment's Google Form. The confirmat
 Submitted the two-page `fieldguide-submission.pdf` with the public app/source links and final notes distinguishing executed walkthroughs from documentation checks and unverified behavior. No separate email was sent.
 
 Local receipt screenshot: `output/submission-confirmation.png`. Local submitted PDF: `output/pdf/fieldguide-submission.pdf`. Both are retained outside version control; the PDF was uploaded to the form.
-
