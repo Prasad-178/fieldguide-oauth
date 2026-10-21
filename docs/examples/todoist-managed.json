@@ -1,0 +1,336 @@
+{
+  "appName": "Todoist (via Composio)",
+  "officialWebsite": "https://docs.composio.dev/toolkits/todoist",
+  "status": "documented",
+  "summary": "Connect your Todoist account through Composio's managed OAuth app and read your active (incomplete) tasks with TODOIST_GET_ALL_TASKS via a Composio session.",
+  "overview": {
+    "difficulty": "Straightforward",
+    "reason": "Composio provides the managed Todoist OAuth app, so no provider app registration or client secret is needed; you only connect your own Todoist account.",
+    "agentCan": "Install the SDK, write and run the session script, and call TODOIST_GET_ALL_TASKS once a connection exists.",
+    "youHandle": "Create a Composio account/API key, open the Connect Link, log in to Todoist, and review/approve the consent screen. This is a private test setup, not approval for external users."
+  },
+  "effort": {
+    "handsOn": "Not estimated",
+    "waiting": "Not published / not confirmed",
+    "basis": "Assumes an existing Composio account/API key and a Todoist account with at least one task; no provider app registration is needed.",
+    "sourceIds": [
+      1,
+      2,
+      5
+    ]
+  },
+  "prerequisites": [
+    {
+      "title": "Composio account with an API key",
+      "detail": "Composio manages the Todoist OAuth app (toolkit TODOIST, auth OAUTH2), so you do not register your own Todoist OAuth app.",
+      "sourceIds": [
+        1,
+        5
+      ]
+    }
+  ],
+  "permissions": [
+    {
+      "name": "Todoist OAuth via Composio-managed app",
+      "reason": "Reading your active tasks requires an authenticated Todoist connection; Composio hosts the OAuth app and stores/refreshes tokens.",
+      "sourceIds": [
+        1,
+        2,
+        5
+      ]
+    },
+    {
+      "name": "Composio API key",
+      "reason": "Authenticates SDK calls to Composio's backend; pass it explicitly or via the documented COMPOSIO_API_KEY fallback.",
+      "sourceIds": [
+        1,
+        13
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "kind": "setup",
+      "title": "Install the Composio SDK",
+      "action": "Install the Composio Python SDK",
+      "detail": "The composio package provides the Composio class and session APIs used throughout this guide.",
+      "actor": "agent",
+      "evidence": "documented",
+      "destination": "",
+      "url": "https://docs.composio.dev/docs/authentication",
+      "successCheck": "python -c \"import composio\" runs without ImportError.",
+      "recovery": "If install fails, check your Python/pip environment and retry; no Composio account changes are involved.",
+      "sourceIds": [
+        2,
+        9
+      ],
+      "instructions": [
+        "Run: pip install composio",
+        "Confirm the install completes without errors."
+      ]
+    },
+    {
+      "kind": "setup",
+      "title": "Construct the SDK client with your API key",
+      "action": "Construct the SDK client with your API key",
+      "detail": "Source 13 documents that omitting apiKey falls back to the COMPOSIO_API_KEY environment variable (then the CLI-stored key). Passing it explicitly is also supported; either way, keep the real key out of chat and source control.",
+      "actor": "agent",
+      "evidence": "documented",
+      "destination": "",
+      "url": "https://docs.composio.dev/reference/authenticating-to-composio",
+      "successCheck": "The Composio instance constructs without an API-key error.",
+      "recovery": "If calls return 401, verify the key is valid in the Composio dashboard and that it was passed or set in COMPOSIO_API_KEY.",
+      "sourceIds": [
+        13
+      ],
+      "instructions": [
+        "Obtain your Composio API key from your Composio dashboard (user input).",
+        "In your script: import os; from composio import Composio",
+        "composio = Composio(api_key=os.environ[\"COMPOSIO_API_KEY\"])  # explicit pass; omitting api_key also falls back to COMPOSIO_API_KEY",
+        "Never paste the real key into chat or committed code."
+      ]
+    },
+    {
+      "kind": "setup",
+      "title": "Create a Composio session",
+      "action": "Create a Composio session",
+      "detail": "Sessions scope tool access and connected accounts to one user ID; use a stable identifier, not 'default' in production.",
+      "actor": "agent",
+      "evidence": "documented",
+      "destination": "",
+      "url": "https://docs.composio.dev/docs/authentication/manually-authenticating",
+      "successCheck": "A session object is returned without error.",
+      "recovery": "If creation fails, check the API key and that the SDK version supports composio.create(user_id=...).",
+      "sourceIds": [
+        2,
+        9,
+        11
+      ],
+      "instructions": [
+        "session = composio.create(user_id=\"user_123\")  # replace user_123 with your stable user ID",
+        "print(session)"
+      ]
+    },
+    {
+      "kind": "setup",
+      "title": "Generate the Todoist Connect Link",
+      "action": "Start the Todoist connection flow",
+      "detail": "session.authorize('todoist') starts a hosted authorization flow using Composio's managed OAuth app; no client ID or secret from you.",
+      "actor": "agent",
+      "evidence": "documented",
+      "destination": "",
+      "url": "https://docs.composio.dev/docs/authentication/manually-authenticating",
+      "successCheck": "A redirect_url is printed.",
+      "recovery": "If authorize fails, confirm the TODOIST toolkit is available to your project and your API key has session permissions.",
+      "sourceIds": [
+        2,
+        5,
+        9
+      ],
+      "instructions": [
+        "connection_request = session.authorize(\"todoist\")",
+        "print(connection_request.redirect_url)  # a https://connect.composio.dev/link/... URL"
+      ]
+    },
+    {
+      "kind": "setup",
+      "title": "Connect your Todoist account",
+      "action": "Open the Connect Link and approve consent",
+      "detail": "Composio hosts the OAuth consent; the exact scopes Composio's managed Todoist app requests are not documented in the sources, so review the consent screen before approving.",
+      "actor": "both",
+      "evidence": "documented",
+      "destination": "",
+      "url": "https://docs.composio.dev/docs/authentication/manually-authenticating",
+      "successCheck": "The browser shows the connection completed.",
+      "recovery": "If you close the link without completing, the connection stays INITIATED until it expires; call session.authorize('todoist') again for a fresh link.",
+      "sourceIds": [
+        2,
+        9
+      ],
+      "instructions": [
+        "Open the printed redirect_url in a browser (user input).",
+        "Log in to Todoist if prompted.",
+        "Review the permissions shown on the consent screen and approve them."
+      ]
+    },
+    {
+      "kind": "setup",
+      "title": "Wait for the connection to become active",
+      "action": "Wait for the connection",
+      "detail": "wait_for_connection polls until authentication completes; the 60000 ms argument is a polling timeout, not an approval waiting period.",
+      "actor": "agent",
+      "evidence": "documented",
+      "destination": "",
+      "url": "https://docs.composio.dev/docs/authentication/manually-authenticating",
+      "successCheck": "A connected account ID is printed.",
+      "recovery": "On timeout while the user is still authenticating, call wait_for_connection again or re-run authorize for a new link.",
+      "sourceIds": [
+        9
+      ],
+      "instructions": [
+        "connected_account = connection_request.wait_for_connection(60000)",
+        "print(connected_account.id)"
+      ]
+    },
+    {
+      "kind": "test",
+      "title": "Read your active tasks",
+      "action": "Test: fetch active (incomplete) tasks",
+      "detail": "TODOIST_GET_ALL_TASKS returns only incomplete (active) tasks; completed tasks need a different tool. No filter returns all active tasks.",
+      "actor": "both",
+      "evidence": "documented",
+      "destination": "",
+      "url": "https://docs.composio.dev/toolkits/todoist",
+      "successCheck": "result.result_type == 'completed' and result.data contains your task list.",
+      "recovery": "A 400 from a filter means invalid terms; with no filter this should not occur. If execution fails, check the connection is ACTIVE and retry.",
+      "sourceIds": [
+        5,
+        11
+      ],
+      "instructions": [
+        "result = session.execute(\"TODOIST_GET_ALL_TASKS\", arguments={})",
+        "if result.result_type == \"failed\": raise RuntimeError(result.error or f\"Tool execution failed (log ID: {result.log_id})\")",
+        "print(result.data)"
+      ]
+    },
+    {
+      "kind": "launch",
+      "title": "Confirm this stays a private test",
+      "action": "Launch check for this test setup",
+      "detail": "No distribution or external-user approval is part of this request; Composio production suitability, branding and workspace-admin approval were not evaluated in the sources.",
+      "actor": "both",
+      "evidence": "documented",
+      "destination": "",
+      "url": "https://docs.composio.dev/docs/authentication",
+      "successCheck": "You have explicitly confirmed this is a single-user test with no external distribution.",
+      "recovery": "If you later need external users, re-check Composio production guidance before distributing.",
+      "sourceIds": [
+        2,
+        5
+      ],
+      "instructions": [
+        "Do not share the Connect Link or connected account with other users.",
+        "Note that no evidence in the sources covers production rollout or external-user approval for this setup."
+      ]
+    }
+  ],
+  "blockers": [
+    {
+      "title": "Managed Todoist scopes not published",
+      "detail": "The Composio-managed Todoist OAuth app's granted scopes are not documented in the supplied sources, so read access cannot be pre-verified; the consent screen at connection time is the authoritative check.",
+      "sourceIds": [
+        1,
+        5,
+        6
+      ]
+    }
+  ],
+  "unknowns": [
+    "The exact scopes Composio's managed Todoist OAuth app requests (e.g., data:read) are not stated in the sources; the consent screen at connection time is the check.",
+    "The full output schema of TODOIST_GET_ALL_TASKS is truncated in the source page, so the exact response field names beyond data/error/successful are unconfirmed.",
+    "No source evidence covers production suitability, branding, or workspace-admin approval for distributing this integration to external users."
+  ],
+  "agentBrief": "Task: read active Todoist tasks via Composio-managed OAuth (test audience). Confirmed: Todoist toolkit TODOIST, auth OAUTH2, Composio-managed OAuth available (https://docs.composio.dev/toolkits/todoist). Route: Python SDK sessions. Install composio, construct Composio(api_key=...) — source 13 documents that omitting apiKey falls back to the COMPOSIO_API_KEY environment variable, so either explicit passing or the env var works. Then composio.create(user_id), session.authorize('todoist') returns redirect_url for the user to open and consent; wait_for_connection polls until active (60000 ms is a polling timeout, not an approval wait). Then session.execute('TODOIST_GET_ALL_TASKS', arguments={}) returns incomplete (active) tasks; check result.result_type == 'completed'. Agent can write/run this code; human must supply the Composio API key, open the Connect Link, log in to Todoist and approve consent. Gaps: Composio's managed Todoist scopes are not documented in sources (Todoist data:read exists per developer.todoist.com but managed-app scope set unconfirmed); TODOIST_GET_ALL_TASKS output schema truncated. Sources: docs.composio.dev/toolkits/todoist, docs.composio.dev/docs/authentication/manually-authenticating, docs.composio.dev/reference/authenticating-to-composio.",
+  "version": 1,
+  "request": {
+    "query": "Todoist",
+    "useCase": "Read my active tasks",
+    "audience": "test",
+    "auth": "managed"
+  },
+  "generatedAt": "2026-10-21T10:05:18.322Z",
+  "sources": [
+    {
+      "id": 1,
+      "title": "Managed OAuth apps",
+      "url": "https://docs.composio.dev/toolkits/managed-auth",
+      "evidence": "retrieved"
+    },
+    {
+      "id": 2,
+      "title": "Authentication (/docs/authentication)",
+      "url": "https://docs.composio.dev/docs/authentication",
+      "evidence": "retrieved"
+    },
+    {
+      "id": 3,
+      "title": "Connected Accounts",
+      "url": "https://docs.composio.dev/docs/auth-configuration/connected-accounts",
+      "evidence": "retrieved"
+    },
+    {
+      "id": 4,
+      "title": "Managed vs custom auth (/docs/authentication/custom-app-vs-managed-app)",
+      "url": "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
+      "evidence": "search-excerpt"
+    },
+    {
+      "id": 5,
+      "title": "docs.composio.dev",
+      "url": "https://docs.composio.dev/toolkits/todoist",
+      "evidence": "retrieved"
+    },
+    {
+      "id": 6,
+      "title": "Todoist API",
+      "url": "https://developer.todoist.com/api/v1",
+      "evidence": "search-excerpt"
+    },
+    {
+      "id": 7,
+      "title": "Todoist CLI for AI Agents",
+      "url": "https://composio.dev/toolkits/todoist/framework/cli",
+      "evidence": "search-excerpt"
+    },
+    {
+      "id": 8,
+      "title": "composio.dev",
+      "url": "https://composio.dev/toolkits/todoist",
+      "evidence": "search-excerpt"
+    },
+    {
+      "id": 9,
+      "title": "Current Composio authentication reference",
+      "url": "https://docs.composio.dev/docs/authentication/manually-authenticating",
+      "evidence": "retrieved"
+    },
+    {
+      "id": 10,
+      "title": "Current Composio authentication reference",
+      "url": "https://docs.composio.dev/docs/authentication/controlling-scopes",
+      "evidence": "retrieved"
+    },
+    {
+      "id": 11,
+      "title": "Current Composio authentication reference",
+      "url": "https://docs.composio.dev/docs/how-composio-works",
+      "evidence": "retrieved"
+    },
+    {
+      "id": 12,
+      "title": "Current Composio authentication reference",
+      "url": "https://docs.composio.dev/docs/configuring-sessions",
+      "evidence": "retrieved"
+    },
+    {
+      "id": 13,
+      "title": "docs.composio.dev",
+      "url": "https://docs.composio.dev/reference/authenticating-to-composio",
+      "evidence": "retrieved"
+    },
+    {
+      "id": 14,
+      "title": "Composio (/reference/sdk-reference/python/composio)",
+      "url": "https://docs.composio.dev/reference/sdk-reference/python/composio",
+      "evidence": "retrieved"
+    }
+  ],
+  "run": {
+    "model": "z-ai/glm-5.3",
+    "searches": 5,
+    "toolCalls": 5,
+    "pageReads": 10,
+    "costUsd": 0.092767735,
+    "durationMs": 82795
+  }
+}

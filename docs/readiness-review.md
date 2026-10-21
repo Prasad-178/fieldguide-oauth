@@ -42,4 +42,12 @@ Production build completed, homepage returned HTTP 200 and malformed API input r
 
 The document reader cannot render JavaScript and requires public IPv4. Source excerpts can omit needed detail; model generation and review can both be wrong. No unfamiliar-app pass rate is claimed. Samples are dated and shared snapshots do not refresh themselves. Signed links detect modification, not factual errors, and have no individual revocation. No usability interviews or complete accessibility audit were performed.
 
-Final browser/share verification and submission receipt are recorded below when completed.
+## Final production browser check
+
+A fresh public-UI request for Discord basic-profile access (test audience, own app) completed with GLM-5.3: 93.089 seconds, five searches, seven primary-page reads and $0.068799155 reported cost. It produced nine steps. The shared snapshot reopened in a separate browser tab with 0/9 personal checks, and the signature-verification endpoint returned HTTP 200. No second research call was needed to share or reopen it.
+
+Manually checked the scope declaration, authorization URL, state/issuer checks, form-encoded token exchange and identify-scoped user response against Discord's current OAuth, platform permissions and user-resource documentation. Portal field labels and public-distribution policy remain explicit unknowns. No Discord account was created or connected.
+
+Recorded outputs: [Discord production guide](examples/discord-live.json) and [Todoist managed guide](examples/todoist-managed.json). These are review artifacts, not runtime fallbacks. Local screenshot: `.data/walkthrough/production-discord-shared.jpg`.
+
+Submission receipt is recorded below after the form confirms it.

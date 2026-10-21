@@ -1,0 +1,326 @@
+{
+  "appName": "Discord",
+  "officialWebsite": "https://discord.com/developers/applications",
+  "status": "documented",
+  "summary": "Register a Discord developer application, declare the identify scope in the Developer Portal, run the authorization-code grant, and call GET /users/@me with the Bearer token to read the connected user's basic profile.",
+  "overview": {
+    "difficulty": "Straightforward",
+    "reason": "Discord documents a standard authorization-code grant with a single identify scope; no partner approval is documented for this scope.",
+    "agentCan": "Write the callback handler, token-exchange code, and a minimal test script calling GET /users/@me.",
+    "youHandle": "Create the developer application, declare the identify scope in the portal, register the redirect URI, store the client secret, log in and authorize during the test, and any later approval steps for public distribution."
+  },
+  "effort": {
+    "handsOn": "Estimate: 30-60 min; assumes an existing backend.",
+    "waiting": "Not published / not confirmed",
+    "basis": "Assumes an existing backend and a Discord account; registration, scope declaration and one authorization round-trip.",
+    "sourceIds": [
+      1
+    ]
+  },
+  "prerequisites": [
+    {
+      "title": "Discord account and developer application",
+      "detail": "Discord says the first OAuth2 step is registering a developer application and retrieving client ID and secret.",
+      "sourceIds": [
+        1
+      ]
+    },
+    {
+      "title": "Client ID and client secret from the OAuth2 page",
+      "detail": "The token exchange requires client_id and client_secret via HTTP Basic auth or form body.",
+      "sourceIds": [
+        1
+      ]
+    },
+    {
+      "title": "A backend that can receive the redirect callback",
+      "detail": "The authorization redirect includes a code parameter sent to your registered redirect_uri; you need a backend to receive it.",
+      "sourceIds": [
+        1
+      ]
+    }
+  ],
+  "permissions": [
+    {
+      "name": "identify",
+      "reason": "Allows GET /users/@me to return the user object without email.",
+      "sourceIds": [
+        1,
+        3,
+        5
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "kind": "setup",
+      "title": "Register a developer application",
+      "action": "Create a Discord developer application",
+      "detail": "Discord states the first step in implementing OAuth2 is registering a developer application and retrieving your client ID and client secret.",
+      "actor": "you",
+      "evidence": "documented",
+      "destination": "Open Discord developer dashboard",
+      "url": "https://discord.com/developers/applications",
+      "successCheck": "You can see the application's Client ID and Client Secret on its OAuth2 page.",
+      "recovery": "If the credentials do not work in the token exchange, re-copy them from the OAuth2 page and confirm the env values match.",
+      "sourceIds": [
+        1
+      ],
+      "instructions": [
+        "Log in at https://discord.com/developers/applications with your Discord account.",
+        "Create a new application and give it a name.",
+        "Open the OAuth2 page of the application settings and copy the Client ID and Client Secret."
+      ]
+    },
+    {
+      "kind": "setup",
+      "title": "Declare the identify scope",
+      "action": "Declare the identify scope in the Developer Portal",
+      "detail": "Discord's platform documentation states scopes are requested during the OAuth2 authorization flow and must be declared in the Developer Portal.",
+      "actor": "you",
+      "evidence": "documented",
+      "destination": "Open OAuth2 settings",
+      "url": "https://discord.com/developers/applications",
+      "successCheck": "The identify scope is declared for your application in the Developer Portal.",
+      "recovery": "If the authorization URL returns an invalid-scope error, return to the portal, confirm identify is declared, and retry.",
+      "sourceIds": [
+        3
+      ],
+      "instructions": [
+        "In your application's settings in the Developer Portal, open the OAuth2 configuration area.",
+        "Confirm or add the identify scope so it is declared for your application before you use it in an authorization URL.",
+        "Save the changes."
+      ]
+    },
+    {
+      "kind": "setup",
+      "title": "Add your callback URL",
+      "action": "Register a redirect URI",
+      "detail": "The authorization redirect sends a code parameter to your redirect_uri, which must match what you registered.",
+      "actor": "you",
+      "evidence": "documented",
+      "destination": "Open OAuth2 settings",
+      "url": "https://discord.com/developers/applications",
+      "successCheck": "The redirect URI is listed and saved on the OAuth2 page.",
+      "recovery": "A redirect mismatch causes an authorization error; fix the URI in the portal and retry.",
+      "sourceIds": [
+        1
+      ],
+      "instructions": [
+        "On the application's OAuth2 page, add a redirect URI matching your backend callback, for example https://your-backend.example/callback.",
+        "Save the changes."
+      ]
+    },
+    {
+      "kind": "setup",
+      "title": "Store credentials as environment variables",
+      "action": "Set server-side environment variables",
+      "detail": "Discord requires client credentials for the token exchange; keep the secret server-side only.",
+      "actor": "you",
+      "evidence": "documented",
+      "destination": "",
+      "url": "",
+      "successCheck": "Your backend process can read all three variables at startup.",
+      "recovery": "If the token exchange returns 401, re-check that the env values match the portal values.",
+      "sourceIds": [
+        1,
+        6
+      ],
+      "instructions": [
+        "Before running any code, set DISCORD_CLIENT_ID to your application's Client ID.",
+        "Set DISCORD_CLIENT_SECRET to your application's Client Secret.",
+        "Set DISCORD_REDIRECT_URI to the exact redirect URI registered in the previous step."
+      ]
+    },
+    {
+      "kind": "setup",
+      "title": "Create the authorization link",
+      "action": "Build the authorization URL",
+      "detail": "Discord's base authorization URL is https://discord.com/oauth2/authorize; scopes are URL-encoded space-separated and state is recommended for CSRF protection.",
+      "actor": "agent",
+      "evidence": "documented",
+      "destination": "",
+      "url": "",
+      "successCheck": "Opening the URL shows Discord's authorization page asking to authorize your app for the identify scope.",
+      "recovery": "If Discord shows an invalid-scope error, confirm identify is declared in the portal and that scope is exactly identify.",
+      "sourceIds": [
+        1,
+        3
+      ],
+      "instructions": [
+        "Construct: https://discord.com/oauth2/authorize?response_type=code&client_id=YOUR_CLIENT_ID&scope=identify&state=RANDOM_NONCE&redirect_uri=URL_ENCODED_REDIRECT_URI",
+        "Generate a random state value and store it server-side, bound to the user's session.",
+        "Use only the identify scope for this test."
+      ]
+    },
+    {
+      "kind": "setup",
+      "title": "Receive and validate the redirect",
+      "action": "Implement the callback handler",
+      "detail": "Discord returns code, state and iss parameters; validate state against the stored value and check iss equals https://discord.com before exchanging.",
+      "actor": "agent",
+      "evidence": "documented",
+      "destination": "",
+      "url": "",
+      "successCheck": "The handler receives a code parameter after user authorization.",
+      "recovery": "A state mismatch means possible interception; discard the request and restart the flow.",
+      "sourceIds": [
+        1
+      ],
+      "instructions": [
+        "Serve the registered redirect URI on your backend.",
+        "On GET, read the code, state and iss query parameters.",
+        "Reject the request if state does not match your stored value or iss is not https://discord.com.",
+        "Pass the code to the token-exchange step."
+      ]
+    },
+    {
+      "kind": "setup",
+      "title": "Token exchange",
+      "action": "Exchange the code for an access token",
+      "detail": "Discord's token endpoint accepts only application/x-www-form-urlencoded; credentials go via HTTP Basic auth or form body.",
+      "actor": "agent",
+      "evidence": "documented",
+      "destination": "",
+      "url": "",
+      "successCheck": "The response JSON contains an access_token and scope including identify.",
+      "recovery": "A 400 usually means a bad code or redirect_uri mismatch; restart the authorization flow with fresh state.",
+      "sourceIds": [
+        1,
+        6
+      ],
+      "instructions": [
+        "POST to https://discord.com/api/v10/oauth2/token with Content-Type: application/x-www-form-urlencoded.",
+        "Form fields: grant_type=authorization_code, code=THE_CODE, redirect_uri=YOUR_REDIRECT_URI.",
+        "Authenticate with HTTP Basic auth using client ID as username and client secret as password (read from env vars).",
+        "Parse the JSON response for access_token, refresh_token, expires_in and scope."
+      ]
+    },
+    {
+      "kind": "test",
+      "title": "Test: fetch the current user",
+      "action": "Read the user's basic profile",
+      "detail": "GET /users/@me with a Bearer token and the identify scope returns the user object without email.",
+      "actor": "you",
+      "evidence": "documented",
+      "destination": "",
+      "url": "",
+      "successCheck": "The response includes the connected user's id and username.",
+      "recovery": "A 401 means the token expired (expires_in seconds); re-run the authorization flow or use the refresh token.",
+      "sourceIds": [
+        5,
+        6
+      ],
+      "instructions": [
+        "GET https://discord.com/api/v10/users/@me with header Authorization: Bearer YOUR_ACCESS_TOKEN.",
+        "Confirm the response JSON contains id, username and other identify-scope fields.",
+        "This is the controlled test of the requested use case."
+      ]
+    },
+    {
+      "kind": "launch",
+      "title": "Check distribution and approval requirements",
+      "action": "Check distribution and approval requirements",
+      "detail": "For a test audience, no approval step is documented for the identify scope. Requirements for public distribution (verification thresholds, identity checks) are not confirmed from the retrieved pages, so treat them as an explicit check.",
+      "actor": "you",
+      "evidence": "documented",
+      "destination": "Open Discord developer dashboard",
+      "url": "https://discord.com/developers/applications",
+      "successCheck": "You have confirmed whether your app needs any verification or approval before public distribution.",
+      "recovery": "If you cannot confirm the approval policy, keep the app limited to your own test users.",
+      "sourceIds": [
+        1
+      ],
+      "instructions": [
+        "Keep the app private while testing; do not share the client secret.",
+        "Before distributing beyond your own test users, open your application's settings in the Developer Portal and look for any verification or approval requirements.",
+        "If requirements exist that you cannot confirm from the portal, contact Discord developer support before distributing publicly."
+      ]
+    }
+  ],
+  "blockers": [],
+  "unknowns": [
+    "Exact Developer Portal field labels for declaring scopes and adding redirect URIs were not in the retrieved page text; use the OAuth2 configuration area of your application settings as referenced by Discord's docs.",
+    "Public distribution and approval policy (verification thresholds, identity verification steps) is not confirmed from retrieved sources; check the Developer Portal or Discord developer support before distributing beyond test users.",
+    "Client secret reset behavior is not documented in the retrieved sources; if a secret is lost or exposed, consult the Developer Portal or Discord developer support."
+  ],
+  "agentBrief": "Prepare a Discord OAuth2 authorization-code flow to read the connected user's basic profile. Sources: https://docs.discord.com/developers/topics/oauth2 (flow, endpoints, scopes), https://docs.discord.com/developers/resources/user (GET /users/@me requires identify scope), https://docs.discord.com/developers/platform/oauth2-and-permissions (scopes must be declared in the Developer Portal). Agent can write the callback handler, token-exchange code (POST https://discord.com/api/v10/oauth2/token, form-encoded, Basic auth with client_id/client_secret), and a test script calling GET https://discord.com/api/v10/users/@me with a Bearer token. Human must: create the app in the Discord Developer Portal (https://discord.com/developers/applications), declare the identify scope in the portal, copy client ID/secret into server env vars, register the redirect URI, and log in/authorize during the test. Never share the client secret in chat. Public distribution/approval policy is not confirmed from retrieved pages; verify in the portal before scaling.",
+  "version": 1,
+  "request": {
+    "query": "Discord",
+    "useCase": "Read the connected user’s basic profile",
+    "audience": "test",
+    "auth": "own"
+  },
+  "generatedAt": "2026-10-21T11:37:12.726Z",
+  "sources": [
+    {
+      "id": 1,
+      "title": "OAuth2 - Documentation - Discord",
+      "url": "https://docs.discord.com/developers/topics/oauth2",
+      "evidence": "retrieved"
+    },
+    {
+      "id": 2,
+      "title": "Discord Developer Portal",
+      "url": "https://discord.com/developers/applications,OAuth2",
+      "evidence": "search-excerpt"
+    },
+    {
+      "id": 3,
+      "title": "OAuth2 and Permissions - Documentation",
+      "url": "https://docs.discord.com/developers/platform/oauth2-and-permissions",
+      "evidence": "retrieved"
+    },
+    {
+      "id": 4,
+      "title": "API Reference - Documentation - Discord",
+      "url": "https://docs.discord.com/developers/reference",
+      "evidence": "search-excerpt"
+    },
+    {
+      "id": 5,
+      "title": "User Resource - Documentation",
+      "url": "https://docs.discord.com/developers/resources/user",
+      "evidence": "retrieved"
+    },
+    {
+      "id": 6,
+      "title": "Use with Discord APIs - Documentation - Discord",
+      "url": "https://docs.discord.com/developers/discord-social-sdk/how-to/use-with-discord-apis",
+      "evidence": "retrieved"
+    },
+    {
+      "id": 7,
+      "title": "How Do I Get My App Verified? – Developers",
+      "url": "https://support-dev.discord.com/hc/en-us/articles/23926564536471-How-Do-I-Get-My-App-Verified",
+      "evidence": "search-excerpt"
+    },
+    {
+      "id": 8,
+      "title": "discord-api-spec",
+      "url": "https://github.com/discord/discord-api-spec",
+      "evidence": "retrieved"
+    },
+    {
+      "id": 9,
+      "title": "Enabling Discovery - Documentation - Discord",
+      "url": "https://docs.discord.com/developers/discovery/enabling-discovery",
+      "evidence": "retrieved"
+    },
+    {
+      "id": 10,
+      "title": "Application Resource - Documentation - Discord",
+      "url": "https://docs.discord.com/developers/resources/application",
+      "evidence": "retrieved"
+    }
+  ],
+  "run": {
+    "model": "z-ai/glm-5.3",
+    "searches": 5,
+    "toolCalls": 5,
+    "pageReads": 7,
+    "costUsd": 0.068799155,
+    "durationMs": 93089
+  }
+}
