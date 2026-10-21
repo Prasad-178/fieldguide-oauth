@@ -41,6 +41,18 @@ export function validateDestinations(body: GuideBody, evidence: { url: string; c
 }
 
 export function validateProtocolInstructions(body: GuideBody): void {
+  // A real Dropbox trial contradicted its own evidence label: the test said
+  // required path/response details were not confirmed but was "documented".
+  // Catch explicit admissions; semantic source review is still needed.
+  for (const step of body.steps.filter(step=>step.kind === "test")) {
+    const claims=`${step.detail} ${step.successCheck}`;
+    if(step.evidence === "documented" && /\b(?:not[- ]confirmed|unconfirmed|pending confirmation|not (?:retrieved|verified|documented))\b/i.test(claims)) {
+      throw new Error("The test admits unconfirmed evidence but labels itself documented. Resolve the operation reference, or mark the guide not-confirmed and replace unsupported commands with a reference-verification step.");
+    }
+    if(body.status === "documented" && step.evidence === "unknown") {
+      throw new Error("A guide with an unknown operation test cannot be documented. Resolve the evidence or mark the guide not-confirmed.");
+    }
+  }
   const actions=body.steps.flatMap(step=>step.instructions ?? []).join("\n");
   if(body.status === "documented" && /session\.(?:authorize|execute)\(/.test(actions)) {
     if(!/\b(?:new\s+)?Composio\s*\(/.test(actions) || !/\b(?:const\s+)?session\s*=/.test(actions)) {

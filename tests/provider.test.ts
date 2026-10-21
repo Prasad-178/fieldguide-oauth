@@ -278,3 +278,17 @@ test('DeepSeek trials explicitly disable unbounded thinking',async t=>{
  });
  await completion({model:'deepseek/deepseek-v4.1-flash'},AbortSignal.timeout(1000),'guide');
 });
+
+
+test('operation evidence uncertainty cannot be presented as a documented test',()=>{
+ const body=generatedFixture();
+ const step=body.steps.find(step=>step.kind==='test')!;
+ step.evidence='documented';
+ step.detail='The official endpoint reference was not retrieved; root-path semantics remain unconfirmed.';
+ assert.throws(()=>validateProtocolInstructions(body),/test admits unconfirmed/);
+ step.evidence='unknown';
+ assert.throws(()=>validateProtocolInstructions(body),/unknown operation test/);
+ body.status='not-confirmed';
+ step.instructions=['Read the official endpoint reference before executing the operation.'];
+ assert.doesNotThrow(()=>validateProtocolInstructions(body));
+});

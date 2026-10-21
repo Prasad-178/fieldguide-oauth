@@ -21,7 +21,7 @@ Set `OPENROUTER_API_KEY` in `.env.local`. Generate a private signing value with 
 npm run dev -- --port 3017
 ```
 
-Open http://localhost:3017. Samples work without credentials; live research requires the two server variables. `OPENROUTER_MODEL` defaults to `openai/gpt-5.4-nano`. No separate search API key or database is required.
+Open http://localhost:3017. Samples work without credentials; live research requires the two server variables. `OPENROUTER_MODEL` defaults to `z-ai/glm-5.3`. No separate search API key or database is required.
 
 ## Try it
 
