@@ -79,3 +79,31 @@ The overview separates difficulty, planning estimates, published approval waits,
 Browser checks on localhost: Gmail managed configuration/scope copy feedback, own-app eight-step navigation and callback instructions, last-step launch content, overview, share-link dialog and copied feedback, and Notion route/brand. At 390 × 844 the document had no horizontal overflow and enabled buttons used pointer cursors. Desktop keeps instruction-panel scrolling and a visible action footer. No provider operation is inferred from checklist clicks. Screenshot: `.data/walkthrough/rebuilt-gmail-instructions.jpg`.
 
 Additional managed dashboard inspection reached Toolkits → Gmail → GMAIL_FETCH_EMAILS → Input schema. Observed `user_id`, `query`, `max_results`, payload and other fields, plus Execute Tool. We did not click Execute Tool or verify its post-connection controls. The guide now states this boundary rather than inventing the next screen. No mailbox read or send occurred.
+
+## Continued own-client walkthrough after user policy acceptance
+
+The user checked the Google API Services User Data Policy checkbox. Continue → Create then displayed **OAuth configuration created!**. The app remains **External / Testing**.
+
+Data Access → Add or remove scopes opens **Update selected scopes**. At **Manually paste scopes**, enter the full Gmail read-only scope, choose **Add to table**, verify the selected row, then **Update → Save**. Google displayed **Data access changes saved!** and placed gmail.readonly under Restricted scopes. This declares requested permissions; no mailbox consent was granted.
+
+Audience → Test users → Add users uses an email-chip field. Commit the typed address (Enter, or a first click that blurs the field), then Save. Verified the dedicated walkthrough account in the table and a count of **1 user (1 test, 0 other)**. It remains Testing; no public publishing was attempted.
+
+Reopened API Library → Gmail API in the same project and confirmed **API Enabled**. Earlier uncertainty about whether Enable completed is resolved.
+
+Clients → Create client → Web application exposes Name, Authorized JavaScript origins and Authorized redirect URIs. Prepared **Fieldguide local Gmail test** with only `http://localhost:8765/oauth/callback` as its redirect. JavaScript origins remain empty because the test exchanges tokens on the local server. A new **Use this client for an AI-powered agent** checkbox is present. Its help says it designates clients for agent actions, including Google MCP tools, and recommends separate clients for agent and standard workflows. It remains unchecked for this standard API test. **Create has not been clicked; credential creation awaits explicit confirmation.**
+
+The user-facing guide now includes these observed navigation details and updated evidence boundaries. Screenshots: `.data/walkthrough/google-client-prepared.jpg` and `.data/walkthrough/gmail-api-enabled.jpg`.
+
+## Local callback tool
+
+`scripts/gmail-walkthrough.mts` is a local-only aid for completing the account walkthrough. It is not part of the deployed app and is excluded from Vercel uploads. It uses Google's official authentication library, binds only to 127.0.0.1:8765, validates Host/Origin and session-bound single-use state, uses PKCE, and requests online read-only access. Tokens remain in memory with a 15-minute session expiry. No refresh token, email sending or automatic mailbox read is requested.
+
+Run: `node --import tsx scripts/gmail-walkthrough.mts`. Open `http://localhost:8765`. After client creation, privately save the web-client JSON outside the repository at `~/.config/fieldguide/gmail-client.json` (restrict file access), or set `GMAIL_WALKTHROUGH_CLIENT_FILE` to its private path. The callback must exactly match the registered URI. Never paste client secrets into chat.
+
+After the user explicitly grants consent, a separate button reads at most one known message with subject `fieldguide-test`, then fetches that message. The page reports boolean subject/content checks without displaying or logging message content, addresses, IDs or tokens. Stop the process to clear local state; Google account grant revocation is a separate action.
+
+Automated test uses a fake Google client and verifies invalid Host/Origin rejection, state mismatch, one-use callback handling, no implicit read on callback, and the bounded read request with private output suppressed. Actual credentials, consent, token exchange and Gmail reads remain untested until the user approves and completes the pending client/consent steps.
+
+Installing the local Google library surfaced existing npm audit findings in the eslint/shadcn development dependency chains. The report names no google-auth-library chain. No forced/downgrade audit fix was applied during this walkthrough.
+
+Validation for this continuation: 55 tests passed, ESLint passed, production build passed and `git diff --check` passed. The local callback homepage was opened in the browser; no Connect action was taken. No deployment, client creation, token exchange, mailbox operation or email send occurred.
