@@ -4,7 +4,7 @@ Find the next step in OAuth setup. Choose a Gmail, Slack or Notion sample, or re
 
 Live: **https://fieldguide-oauth.vercel.app** · [Source repository](https://github.com/Prasad-178/fieldguide-oauth) (public).
 
-Built for the Composio APM integrations take-home with Next.js, React, TypeScript, shadcn/Radix, Tailwind, Motion and OpenRouter.
+Built with Next.js, React, TypeScript, shadcn/Radix, Tailwind, Motion and OpenRouter.
 
 ## Run locally
 
