@@ -17,7 +17,10 @@ export function publicIPv4(address: string): boolean {
 
 export function extractDocument(html: string, url: string): string {
   const $ = load(html);
-  $("script,style,noscript,svg,nav,header,footer,form").remove();
+  // API reference sites put endpoint URLs/scopes in article headers and
+  // parameter documentation inside forms. Keep their text; discard controls
+  // and executable content. Prefer the article so navigation is not evidence.
+  $("script,style,noscript,svg,nav,footer,[role=navigation],body > header,[role=banner],input,textarea,select,button").remove();
   $("a[href]").each((_,element) => {
     const a = $(element);
     try {
@@ -27,8 +30,9 @@ export function extractDocument(html: string, url: string): string {
   });
   $("br").replaceWith("\n");
   $("p,li,h1,h2,h3,h4,pre,tr,section").each((_,element) => { $(element).append("\n"); });
+  const article = $("article").first();
   const main = $("main").first();
-  const text = (main.length ? main.text() : $("body").text()).replace(/[ \t]+/g," ").replace(/\n\s*\n/g,"\n\n").trim();
+  const text = (article.text().trim().length>=200 ? article.text() : main.length ? main.text() : $("body").text()).replace(/[ \t]+/g," ").replace(/\n\s*\n/g,"\n\n").trim();
   return text.slice(0,120000);
 }
 

@@ -21,7 +21,7 @@ Set `OPENROUTER_API_KEY` in `.env.local`. Generate a private signing value with 
 npm run dev -- --port 3017
 ```
 
-Open http://localhost:3017. Samples work without credentials; live research requires the two server variables. `OPENROUTER_MODEL` defaults to `openai/gpt-5.4`. No separate search API key or database is required.
+Open http://localhost:3017. Samples work without credentials; live research requires the two server variables. `OPENROUTER_MODEL` defaults to `openai/gpt-5.4-nano`. No separate search API key or database is required.
 
 ## Try it
 
@@ -87,7 +87,7 @@ Read [the validation report](docs/validation.md), [developer UX research](docs/d
 - Live research is nondeterministic. Recorded successful examples are evidence of those runs, not a pass rate.
 - A dedicated Gmail managed auth configuration and Google Cloud test project were created during the browser walkthrough. Google blocked the managed read-only consent attempt; own-app identity, scope and test user are saved, and Gmail API is enabled. The own-app flow completed read-only consent, PKCE authorization-code exchange and Gmail messages.list/messages.get against an unsent test draft. The subject matched and message content was returned. No email was sent. Client credentials remain outside this repository; no refresh token or public approval was requested.
 - Sample guidance is dated 21 October 2026. Generated guides show their own timestamps; neither updates automatically after sharing.
-- In-process limits allow six research requests per IP per 15 minutes and two active requests per server instance. They are not a durable global quota. The deployed Vercel project also has a published firewall rule limiting POST /api/research to six requests per IP per 15 minutes. Tool/output caps reduce individual request cost; they do not impose an account spending cap.
+- In-process limits allow six research requests per IP per 15 minutes and two active requests per server instance. They are not a durable global quota. The deployed Vercel project also has a published firewall rule limiting POST /api/research to six requests per IP per 15 minutes. Every model request has a provider-enforced ceiling of $0.25 per million input tokens and $1.50 per million output tokens. Web-search charges are separate. After reported cost reaches $0.20, billing data is missing, or ten model calls have started, the pipeline stops additional paid calls. This is a soft per-research limit: an in-flight call can cross it. There is no automatic premium-model fallback and no account-wide spending cap.
 - Cancellation aborts the local provider request, but cannot guarantee that already-started provider work stops or is unbilled.
 - No usability interviews or full accessibility audit were conducted. Browser checks and direct user feedback informed the UI.
 

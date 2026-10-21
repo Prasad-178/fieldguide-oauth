@@ -242,3 +242,39 @@ test('managed walkthroughs cannot call an undefined SDK session or mix languages
  body.steps[0].instructions[2]='Read redirectUrl.';
  assert.doesNotThrow(()=>validateProtocolInstructions(body));
 });
+
+
+test('every provider request carries token-price ceilings while retaining strict-output requirements',async t=>{
+ t.mock.method(globalThis,'fetch',async(_url:unknown,init?:RequestInit)=>{
+  const body=JSON.parse(String(init?.body));
+  assert.deepEqual(body.provider,{require_parameters:true,max_price:{prompt:0.25,completion:1.5}});
+  assert.equal(body.reasoning.effort,'low');
+  assert.equal('temperature' in body,false);
+  return draftResult({ok:true});
+ });
+ await completion({model:'openai/gpt-5.4-nano',temperature:0,provider:{require_parameters:true}},AbortSignal.timeout(1000),'guide');
+});
+
+for(const [name,cost] of [['reported ceiling',0.21],['missing billing data',undefined]] as const){
+ test(`research stops follow-up paid calls after ${name}`,async t=>{
+  let calls=0;
+  t.mock.method(globalThis,'fetch',async()=>{
+   calls++;
+   const result=await sourceResult().json();result.usage.cost=cost;
+   return response(result);
+  });
+  await assert.rejects(research(request,AbortSignal.timeout(1000),()=>{},readFixture),(error:unknown)=>error instanceof ResearchError && error.diagnostic?.code==='research_cost_limit');
+  assert.equal(calls,1);
+ });
+}
+
+
+test('DeepSeek trials explicitly disable unbounded thinking',async t=>{
+ t.mock.method(globalThis,'fetch',async(_url:unknown,init?:RequestInit)=>{
+  const body=JSON.parse(String(init?.body));
+  assert.deepEqual(body.reasoning,{enabled:false});
+  assert.deepEqual(body.provider.max_price,{prompt:0.25,completion:1.5});
+  return draftResult({ok:true});
+ });
+ await completion({model:'deepseek/deepseek-v4.1-flash'},AbortSignal.timeout(1000),'guide');
+});

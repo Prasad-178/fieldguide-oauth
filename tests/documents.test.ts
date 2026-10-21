@@ -29,3 +29,11 @@ test('long documentation retains a requested operation beyond the first page exc
  const focused=focusDocument(text,'Read active tasks');
  assert.ok(focused.length<=30000);assert.match(focused,/TODOIST_GET_ACTIVE_TASKS/);assert.match(focused,/intervening text omitted/);
 });
+
+
+test('API article headers and form parameter descriptions remain evidence without interactive controls',()=>{
+ const html=`<header>Site navigation</header><main><nav>Other endpoints</nav><article><header><h1>Search tasks</h1>GET https://api.example.com/workspaces/{workspace_gid}/tasks/search<p>Required scope: tasks:read. Premium access is required for this operation.</p></header><form><h2>Path Params</h2><label>workspace_gid: string, required. Identifier from the workspace list response.</label><input value="do-not-copy"/><button>Try it</button></form><p>Return data contains task IDs and names. Follow the pagination cursor until no next page remains.</p></article></main><script>do-not-execute</script>`;
+ const result=extractDocument(html,'https://docs.example.com/tasks');
+ for(const text of ['GET https://api.example.com/','Required scope: tasks:read','Premium access','workspace_gid: string, required','pagination cursor'])assert.ok(result.includes(text),text);
+ for(const text of ['Site navigation','Other endpoints','do-not-copy','Try it','do-not-execute'])assert.ok(!result.includes(text),text);
+});
