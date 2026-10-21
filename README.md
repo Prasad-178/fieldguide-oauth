@@ -35,10 +35,10 @@ Use “Refresh research” within a sample to investigate its current requiremen
 
 ## How it works
 
-`POST /api/research` validates context, then makes two server-side OpenRouter requests:
+`POST /api/research` validates context, then runs two server-side OpenRouter stages (with at most one additional corrected guide draft):
 
 1. **Investigate:** the model uses web search/fetch with bounded tool calls. Returned URL annotations form the evidence registry. A run without a reported search or usable source excerpts is rejected.
-2. **Structure:** the model writes a typed guide from those excerpts. The provider receives a simplified shape schema; Zod enforces the full response bounds afterward; documented steps and permissions need source references, and a documented guide must include a controlled test and launch check.
+2. **Structure:** the model writes a typed guide from those excerpts. The provider receives a simplified shape schema; Zod enforces the full response bounds afterward; documented steps and permissions need source references, and a documented guide must include a controlled test and launch check. An invalid draft gets one correction attempt against the same evidence; a second invalid draft is rejected. Managed setup additionally requires a Composio-cited setup or connection step.
 
 The client receives real stage changes over NDJSON. There is no fabricated percentage counter. A 150-second timeout, cancellation, input preservation and readable failures support recovery.
 
