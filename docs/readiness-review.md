@@ -28,7 +28,7 @@ OpenRouter returned HTTP 402 during the final Todoist and Asana reviews. A subse
 
 ## Deployed revision
 
-Deployment: `dpl_2vmuXT4RPHUBMnqTB9YBqCRk2sP9`, built and promoted 21 October 2026.
+Latest runtime revision: `b85cf04`. Deployment: `dpl_xep88QQyW6xAKhetcceNCA5bjyUJ`, built on 21 October 2026. This includes the successful own-app read evidence and route-specific status labels.
 The public domain resolves to the rebuilt deployment. Preview protection remains enabled; CLI verification used Vercel's supported authenticated curl. No production credentials are included in the repository or PDF.
 
 ## Final acceptance sequence
