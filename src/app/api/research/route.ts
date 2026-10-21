@@ -38,7 +38,7 @@ export async function POST(request: Request) {
         send({type:"complete",guide,token:signGuide(guide)});
       } catch (error) {
         // Diagnostic categories only: never log inputs, keys, source text or raw provider errors.
-        if (!request.signal.aborted) console.error("research_failed", error instanceof ResearchError ? { ...error.diagnostic, status:error.status } : { code:signal.aborted?"timeout":"unexpected" });
+        if (!request.signal.aborted) console.error("research_failed", error instanceof ResearchError ? { code:error.diagnostic?.code, stage:error.diagnostic?.stage, upstreamStatus:error.diagnostic?.upstreamStatus, status:error.status } : { code:signal.aborted?"timeout":"unexpected" });
         if (!request.signal.aborted) {
           const message = signal.aborted ? "Research took too long. Try a more specific app name or website." : error instanceof ResearchError ? error.message : "Research could not finish. Your input is preserved; try again.";
           try { output.enqueue(encoder.encode(JSON.stringify({type:"error",message})+"\n")); } catch {}

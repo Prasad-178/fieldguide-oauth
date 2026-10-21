@@ -1,6 +1,6 @@
 # Fieldguide
 
-Find the next step in OAuth setup. Choose a Gmail, Slack or GitHub sample, or research another app by name or website. Guides separate setup work, a controlled connection test, and external launch requirements.
+Find the next step in OAuth setup. Choose a Gmail, Slack or Notion sample, or research another app by name or website. Guides separate setup work, a controlled connection test, and external launch requirements.
 
 Live: **https://fieldguide-oauth.vercel.app** · [Source repository](https://github.com/Prasad-178/fieldguide-oauth) (currently private; reviewers need access).
 
@@ -25,7 +25,7 @@ Open http://localhost:3017. Samples work without credentials; live research requ
 
 ## Try it
 
-1. Compare Gmail's send/read permissions and approval requirements with Slack or GitHub.
+1. Compare Gmail's send/read permissions and approval requirements with Slack or Notion.
 2. Search for **Linear** and describe **reading issues in a test workspace**. Choose your intended audience and client ownership.
 3. Watch actual research stages, inspect step citations, open success/recovery details, and check launch requirements.
 4. Share the guide and reopen its link. It preserves the researched snapshot, not personal checklist progress.
@@ -38,7 +38,7 @@ Use “Refresh research” within a sample to investigate its current requiremen
 `POST /api/research` validates context, then:
 
 1. Searches for the requested product, operation and approval requirements. An identity check asks for the official website when the product is ambiguous.
-2. Selects primary sources, reads up to four pages, and follows up to two relevant documentation links. The server checks public HTTPS destinations, pins DNS resolution to public IPv4 addresses and rechecks redirects. It sends no cookies or credentials. Long documents keep the introduction and task-relevant excerpts.
+2. Selects primary sources, reads up to four pages, and follows up to two relevant documentation links. The server checks public HTTPS destinations, pins DNS resolution to public IPv4 addresses and rechecks redirects. Managed requests also read three current Composio authentication references. It sends no cookies or credentials. Long documents keep the introduction and task-relevant excerpts.
 3. Generates ordered instructions, an effort/ownership overview, success checks and recovery steps. Zod validates bounds, citation references and destination links.
 4. Reviews the draft against the page text for missing handoffs, unsupported claims and operation/launch gaps. One targeted search can retrieve up to two additional pages. Up to three drafts are allowed. Unresolved review findings become a `not-confirmed` result with the unsupported walkthrough withheld.
 
@@ -86,7 +86,7 @@ Read [the validation report](docs/validation.md), [developer UX research](docs/d
 - Pages may be inaccessible, incomplete or changed; task-relevant excerpts may omit context. The reader does not execute JavaScript and currently requires public IPv4. Model source selection and review can still be wrong. Citations do not prove correctness.
 - Live research is nondeterministic. Recorded successful examples are evidence of those runs, not a pass rate.
 - A dedicated Gmail managed auth configuration and Google Cloud test project were created during the browser walkthrough. Google blocked the managed read-only consent attempt; own-app setup paused at the User Data Policy agreement. No client secret, mailbox grant, token exchange, API operation or approval was completed.
-- Sample guidance is dated 20 October 2026. Generated guides show their own timestamps; neither updates automatically after sharing.
+- Sample guidance is dated 21 October 2026. Generated guides show their own timestamps; neither updates automatically after sharing.
 - In-process limits allow six research requests per IP per 15 minutes and two active requests per server instance. They are not a durable global quota. The deployed Vercel project also has a published firewall rule limiting POST /api/research to six requests per IP per 15 minutes. Tool/output caps reduce individual request cost; they do not impose an account spending cap.
 - Cancellation aborts the local provider request, but cannot guarantee that already-started provider work stops or is unbilled.
 - No usability interviews or full accessibility audit were conducted. Browser checks and direct user feedback informed the UI.

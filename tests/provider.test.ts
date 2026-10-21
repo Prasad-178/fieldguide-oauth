@@ -46,7 +46,12 @@ test('simplifying provider constraints does not let oversized guides pass runtim
   if(calls===2)return draftResult({sourceIds:[1],gaps:[],identity:"confirmed",identityReason:"The official Linear documentation matches the requested product."});
   return draftResult(body);
  });
- await assert.rejects(research({query:'Linear',useCase:'Read issues',audience:'test',auth:'own'},AbortSignal.timeout(1000),()=>{},readFixture),/could not pass our checks/);
+ await assert.rejects(research({query:'Linear',useCase:'Read issues',audience:'test',auth:'own'},AbortSignal.timeout(1000),()=>{},readFixture),(error:unknown)=>{
+  assert.ok(error instanceof ResearchError);
+  assert.match(error.message,/could not pass our checks/);
+  assert.match(error.diagnostic?.checks?.[0] ?? '',/summary/);
+  return true;
+ });
  assert.equal(calls,5);
 });
 
@@ -202,4 +207,23 @@ test('raw OAuth parameters must include the full request endpoint in visible ins
  assert.throws(()=>validateProtocolInstructions(body),/full request URL/);
  body.steps[0].instructions.unshift('Open https://provider.org/oauth/authorize with these query parameters.');
  assert.doesNotThrow(()=>validateProtocolInstructions(body));
+});
+
+test('managed research reads current broker contracts even when search returns provider docs only',async t=>{
+ const read:string[]=[];const body=generatedFixture();body.status='not-confirmed';
+ t.mock.method(globalThis,'fetch',async(_url:unknown,init?:RequestInit)=>{
+  const sent=JSON.parse(init!.body as string);const schema=sent.response_format?.json_schema?.name;
+  if(!schema)return sourceResult();
+  if(schema==='documentation_selection')return draftResult({sourceIds:[1],gaps:[],identity:'confirmed',identityReason:'Exact product found.'});
+  if(schema==='walkthrough_review')return draftResult({issues:[]});
+  if(schema==='oauth_setup_guide'){
+   const evidence=JSON.parse(sent.messages[1].content).evidence;
+   assert.ok(evidence.some((s:{url:string;retrieved:boolean})=>s.url.endsWith('/manually-authenticating') && s.retrieved));
+   assert.ok(evidence.some((s:{url:string;retrieved:boolean})=>s.url.endsWith('/controlling-scopes') && s.retrieved));
+  }
+  return draftResult(body);
+ });
+ const guide=await research({...request,auth:'managed'},AbortSignal.timeout(1000),()=>{},async url=>{read.push(url);return {url,content:'Current primary documentation fixture.'};});
+ assert.equal(read.length,4);assert.equal(guide.run.pageReads,4);
+ assert.equal(guide.status,'not-confirmed','broker docs alone must not silently change provider support to documented');
 });

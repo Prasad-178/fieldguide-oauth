@@ -30,3 +30,11 @@ The brief allows a focused working slice, does not require paid accounts or comp
 The demo allows six research requests per IP per 15 minutes. Reviewing samples and reopening saved guides do not invoke new paid research. No provider registration or consent is needed to test the Fieldguide experience itself.
 
 Before submitting: address material review feedback, make the source accessible to the intended reviewers (public repository or explicit reviewer access, by Prasad's choice), prepare the upload document with app/repository links and honest evidence/limitations, then obtain explicit submission instruction.
+
+## Latest local checkpoint — 21 October 2026
+
+Gmail managed and own-client instructions are rebuilt with visible ordered actions, real destinations, success/recovery checks and an effort/ownership summary. Slack and Notion replace the earlier generic examples; GitHub is removed from the sample set. Local browser checks cover the overview, step navigation, scope-copy feedback, share dialog, responsive layout and actual brand marks.
+
+**Still not submission-ready.** Live unfamiliar-app tests found remaining false positives from model review (Todoist), incomplete primary operation evidence (Dropbox), and incomplete public rollout context (Spotify). Wikipedia's no-OAuth public summary request was independently executed successfully, but that single case is not a general pass. See `unfamiliar-app-evaluation.md` for exact artifacts and failures.
+
+Google own-app walkthrough awaits the user's review of the User Data Policy in the isolated test project. Managed read-only consent was blocked by Google. Neither route has completed a mailbox grant or controlled mailbox operation. No submission, new deployment or outbound email was performed at this checkpoint; production still shows the earlier version.

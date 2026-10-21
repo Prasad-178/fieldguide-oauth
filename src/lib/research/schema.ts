@@ -59,7 +59,7 @@ export const savedGuide = guideBody.extend({
   request: researchInput,
   generatedAt: z.string().datetime(),
   sources: z.array(sourceSchema).min(1).max(15),
-  run: z.object({ model: z.string(), searches: z.number(), toolCalls: z.number(), pageReads:z.number().int().min(0).max(8).optional(), costUsd: z.number().nullable(), durationMs: z.number() }),
+  run: z.object({ model: z.string(), searches: z.number(), toolCalls: z.number(), pageReads:z.number().int().min(0).max(12).optional(), costUsd: z.number().nullable(), durationMs: z.number() }),
 });
 export type SavedGuide = z.infer<typeof savedGuide>;
 

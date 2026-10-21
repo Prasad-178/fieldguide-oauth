@@ -1,110 +1,136 @@
-export type Provider = "gmail" | "slack" | "github";
-export type Context = {
-  provider: Provider;
-  intent: "send" | "read";
-  audience: "test" | "public";
-  managed: boolean;
-};
+export type Provider = "gmail" | "slack" | "notion";
+export type Context = { provider: Provider; intent: "send" | "read"; audience: "test" | "public"; managed: boolean };
 export type Step = {
-  title: string;
-  short: string;
-  action: string;
-  destination: string;
-  link: string;
-  visual: [string, string, string];
-  detail: string;
-  check: string;
-  recovery: string;
-  source: string;
+  title: string; short: string; action: string; destination: string; link: string;
+  visual: [string, string, string]; detail: string; check: string; recovery: string; source: string;
+  instructions: string[]; copyValue?: string; actor?: string;
 };
 export const providers = {
   gmail: { name: "Gmail", hint: "Send or read email", domain: "gmail.com" },
-  slack: { name: "Slack", hint: "Post to a workspace", domain: "slack.com" },
-  github: { name: "GitHub", hint: "Read an account profile", domain: "github.com" },
+  slack: { name: "Slack", hint: "Post to a test channel", domain: "slack.com" },
+  notion: { name: "Notion", hint: "Find pages shared with your app", domain: "notion.so" },
 } as const;
 export const sources = {
   scopes: "https://developers.google.com/workspace/gmail/api/auth/scopes",
   google: "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
   restricted: "https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification",
   expiration: "https://developers.google.com/identity/protocols/oauth2#expiration",
+  consent: "https://developers.google.com/workspace/guides/configure-oauth-consent",
+  googleFlow: "https://developers.google.com/identity/protocols/oauth2/web-server",
+  gmailRead: "https://developers.google.com/workspace/gmail/api/reference/rest/v1/users.messages/list",
+  gmailSend: "https://developers.google.com/workspace/gmail/api/reference/rest/v1/users.messages/send",
+  gmailToolkit: "https://docs.composio.dev/toolkits/gmail",
   slack: "https://docs.slack.dev/authentication/installing-with-oauth/",
+  slackCreate: "https://docs.slack.dev/app-management/quickstart-app-settings/",
+  slackPost: "https://docs.slack.dev/reference/methods/chat.postMessage/",
   distribution: "https://docs.slack.dev/app-management/distribution/",
-  github: "https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/creating-an-oauth-app",
-  org: "https://docs.github.com/en/organizations/managing-oauth-access-to-your-organizations-data/about-oauth-app-access-restrictions",
+  notion: "https://developers.notion.com/guides/get-started/public-connections",
+  notionAuth: "https://developers.notion.com/guides/get-started/authorization",
+  notionToken: "https://developers.notion.com/reference/create-a-token",
+  notionSearch: "https://developers.notion.com/reference/post-search",
+  notionLaunch: "https://developers.notion.com/guides/get-started/marketplace-listing",
   composio: "https://docs.composio.dev/toolkits/managed-auth",
+  composioAuth: "https://docs.composio.dev/docs/authentication/manually-authenticating",
+  composioScopes: "https://docs.composio.dev/docs/authentication/controlling-scopes",
 };
 export function scope(c: Context) {
-  return c.provider === "gmail" ? (c.intent === "read" ? "gmail.readonly" : "gmail.send") : c.provider === "slack" ? "chat:write" : "read:user";
+  return c.provider === "gmail" ? (c.intent === "read" ? "gmail.readonly" : "gmail.send") : c.provider === "slack" ? "chat:write" : "Read content";
 }
 export function operation(c: Context) {
-  return c.provider === "gmail" ? (c.intent === "read" ? "Read email" : "Send email") : c.provider === "slack" ? "Post messages" : "Read profile";
+  return c.provider === "gmail" ? (c.intent === "read" ? "Read email" : "Send email") : c.provider === "slack" ? "Post messages" : "Find shared pages";
 }
 export function gate(c: Context) {
-  if (c.managed) return "Confirm managed-client scope and audience support before launch.";
-  if (c.provider === "gmail") return c.intent === "read" ? "Public launch may need restricted-scope review and a security assessment." : "Public launch may need sensitive-scope verification.";
-  return c.provider === "slack" ? "Workspace permission and public distribution are separate checks." : "Organization access can need an owner’s approval.";
+  if(c.managed && c.provider === "gmail") return "Google blocked our managed read-only test. Check support before connecting.";
+  if(c.managed) return "Check current managed-client permissions before connecting.";
+  if(c.provider === "gmail") return c.audience === "test" ? "Start in Testing with a named test user. Public verification is separate." : c.intent === "read" ? "Restricted Gmail access may require verification and a security assessment." : "Public sending may require sensitive-scope verification.";
+  return c.provider === "slack" ? "Workspace installation and external distribution have different requirements." : "Choose installation scope carefully: it cannot be changed after creation.";
 }
 export function reviewSource(c: Context) {
-  return c.managed ? sources.composio : c.provider === "gmail" ? (c.intent === "read" ? sources.restricted : sources.google) : c.provider === "slack" ? sources.distribution : sources.org;
+  return c.managed ? sources.composio : c.provider === "gmail" ? c.intent === "read" ? sources.restricted : sources.google : c.provider === "slack" ? sources.distribution : sources.notionLaunch;
 }
-export function getSteps(c: Context): Step[] {
-  const p = providers[c.provider], gmail = c.provider === "gmail";
-  const portal = gmail ? "https://console.cloud.google.com/" : c.provider === "slack" ? "https://api.slack.com/apps" : "https://github.com/settings/developers";
-  const official = gmail ? sources.scopes : c.provider === "slack" ? sources.slack : sources.github;
-  const registration: Step = {
-    title: c.managed ? "Choose a managed connection" : `Create your ${p.name} app`,
-    short: c.managed ? "Choose connection" : "Create app",
-    action: c.managed ? "Choose this toolkit’s managed authentication option in Composio." : gmail ? "Create a Google Cloud project and enable the Gmail API." : c.provider === "slack" ? "Create a Slack app in a workspace you control." : "Register an OAuth app under the intended owner.",
-    destination: c.managed ? "Open Composio" : gmail ? "Open Google Cloud" : `Open ${p.name} settings`,
-    link: c.managed ? "https://platform.composio.dev/" : portal,
-    visual: [c.managed ? "Composio" : p.name, c.managed ? "Managed auth" : "New app", c.managed ? "Configuration" : "App created"],
-    detail: c.managed ? "Confirm the managed client supports the operation and audience you need. Custom branding, scopes or provider controls may require your own client." : gmail ? "Use a dedicated project. Set its owner, enable Gmail, then prepare your consent-screen app name and support contact. Public verification can also require a homepage, privacy policy and domain ownership." : c.provider === "github" ? "Check the app owner. Prepare Application name, Homepage URL and the callback shown by your auth configuration. The registration form was inspected on 20 October 2026; no app was created. This guide uses an OAuth app." : "Use a dedicated test workspace. Check that its administrator allows app creation and installation.",
-    check: c.managed ? "The intended managed auth configuration exists." : "The app or project exists under the intended owner.",
-    recovery: "If creation is blocked, check your account’s permissions or ask the workspace owner.",
-    source: c.managed ? sources.composio : official,
+export function overview(c: Context) {
+  return {
+    difficulty: c.managed ? "Quick configuration; consent may block you" : c.provider === "gmail" ? "Several console steps + a server callback" : "App registration + a server callback",
+    effort: c.managed ? "Plan 15–30 minutes for configuration and one test, if consent works." : "Plan 1–2 hours if you already have a backend; allow longer to build one.",
+    basis: "Planning estimate, not a measured setup time. Excludes account access, coding from scratch and provider review.",
+    waiting: c.managed ? "No reliable wait estimate for a blocked shared client; ask Composio about your exact scopes." : c.provider === "gmail" ? c.intent === "read" ? "Restricted-scope review and any assessment are separate; confirm your applicable timeline with Google." : "Google describes sensitive-scope review as typically 3–5 business days, after a complete submission; exceptions apply." : c.provider === "notion" ? "Optional Marketplace listing: Notion says to expect a response within 5–10 business days. OAuth use does not require a listing." : "Admin approval and distribution review depend on the workspace and route. No turnaround is promised here.",
+    prerequisites: c.managed ? ["A Composio project you can manage", "A dedicated test account and permission to connect it", "Review the actual consent permissions"] : [c.provider === "gmail" ? "Permission to create a Google Cloud project; a Gmail test account" : `A ${providers[c.provider].name} workspace where you can create and install an app`, "A backend callback URL you control, plus server-side secret storage", c.provider === "gmail" ? "Support/contact email; public launch also needs policy and domain details" : "A test channel or page, separate from customer data"],
+    agentCan: c.managed ? "Prepare a scoped configuration and a single-operation test using current tool schemas." : "Prepare the callback, state checks, token exchange and a small operation test. Help assemble review evidence.",
+    youHandle: "Choose the owning account, review permissions and terms, enter secrets securely, and approve any real connection or write test.",
+    evidence: c.provider === "gmail" ? "Browser walkthrough, 21 Oct 2026: managed config created; Google blocked read-only consent. Own-app setup reached the policy agreement. Token exchange and mailbox operations remain unverified." : "Official documentation reviewed on 21 Oct 2026. These account setups and API operations have not been performed in our walkthrough.",
   };
-  return [
-    registration,
-    {
-      title: "Choose the permission you need", short: "Set permissions",
-      action: `Use ${scope(c)} for ${operation(c).toLowerCase()}.`,
-      destination: c.managed ? "Check managed scopes" : "View provider instructions",
-      link: c.managed ? sources.composio : official,
-      visual: [operation(c), scope(c), gmail ? c.intent === "read" ? "Restricted" : "Sensitive" : "Task permission"],
-      detail: c.managed ? "Verify the managed configuration’s actual scopes. If it cannot support your use case, use your own client." : gmail ? `Configure your consent audience and test users. ${c.intent === "read" ? "Mailbox reading uses a restricted scope. Server handling of restricted data may require a security assessment, subject to exceptions." : "Sending uses a sensitive scope. Do not request mailbox-reading permissions for a send-only feature."}` : c.provider === "slack" ? "chat:write lets a bot post messages. Workspace installation and channel access still need checking." : "read:user covers profile information. Private repositories are outside this sample.",
-      check: "The consent screen and configuration show the intended scope.",
-      recovery: "Check the exact provider error before adding permissions.",
-      source: c.managed ? sources.composio : official,
-    },
-    {
-      title: c.managed ? "Connect a test account" : "Match your callback URL", short: c.managed ? "Connect account" : "Set callback",
-      action: c.managed ? "Start consent with a dedicated test account." : "Copy the exact callback from your auth configuration into the provider settings.",
-      destination: c.managed ? "Open Composio" : "Open provider settings",
-      link: c.managed ? "https://platform.composio.dev/" : portal,
-      visual: c.managed ? ["Test account", "Consent", "Connection"] : ["Auth config", "Exact URL", "Provider settings"],
-      detail: c.managed ? "Check the account and displayed permissions before granting access. A workspace administrator may need to allow installation." : "Keep the client secret on your server. Compare scheme, host, path and trailing slash. Use the callback shown for this environment; older supported callbacks can differ from current defaults.",
-      check: c.managed ? "The expected test account is connected." : "The two callback URLs match exactly.",
-      recovery: c.managed ? "Inspect consent, organization policy and the connected account." : "For redirect_uri_mismatch, compare the configured URLs character by character.",
-      source: sources.composio,
-    },
-    {
-      title: "Try one controlled operation", short: "Test connection",
-      action: gmail ? c.intent === "send" ? "Send one message to an explicit test recipient." : "Read a known message from a test mailbox." : c.provider === "slack" ? "Post one message in a dedicated test channel." : "Read the connected test account’s profile.",
-      destination: "Check testing guidance", link: official,
-      visual: ["Test account", operation(c), "Check result"],
-      detail: gmail ? "Use a dedicated test account. Send-only testing must not depend on an endpoint requiring read scopes. External Testing refresh tokens usually expire after seven days, with exceptions." : "Check both the returned result and the account or workspace used. Avoid real customer data for the first test.",
-      check: "The observed result matches your intended account and input.",
-      recovery: "Check account, scopes and provider errors. Token expiry or revocation can require reconnecting.",
-      source: gmail ? sources.expiration : official,
-    },
-    {
-      title: "Check what launch needs", short: "Plan launch",
-      action: gate(c), destination: "Read launch requirements", link: reviewSource(c),
-      visual: ["Working test", "Review requirements", "External launch"],
-      detail: c.managed ? "Managed authentication can handle client registration but does not approve your product or remove its privacy and data-handling responsibilities." : gmail ? c.intent === "read" ? "Restricted-scope review can take several weeks. An assessment may apply when restricted data passes through or is stored on a server, subject to exceptions. Confirm applicability and costs." : "Google describes a typical sensitive-scope review of 3–5 business days. Exceptions, incomplete submissions and remediation affect timing. Publishing status is separate from verification." : c.provider === "slack" ? "An unlisted pilot and commercial distribution follow different requirements. Check Slack Marketplace requirements and each workspace’s admin policy." : "Organization owners may restrict OAuth access. A user’s consent does not establish permission to access restricted organization resources.",
-      check: "Each applicable launch requirement has an owner and evidence.",
-      recovery: "Document unresolved requirements and seek provider clarification before promising a launch date.",
-      source: reviewSource(c),
-    },
+}
+type StepInput = Omit<Step,"visual"|"detail"> & {detail?:string;visual?:Step["visual"]};
+function step(s:StepInput):Step { return {visual:["Open settings","Make change","Check result"],detail:"Follow the linked source if the provider UI has changed.",...s}; }
+function launch(c:Context):Step {
+  const detail=c.managed ? "Managed credentials do not grant approval for your product. Confirm the supported audience and scopes with Composio before promising availability. A blocked shared client requires provider support or your own verified client." : c.provider === "gmail" ? c.intent === "read" ? "gmail.readonly is restricted. A server that stores or transmits restricted data may need a security assessment, subject to Google's exceptions. Budget for review separately from engineering." : "gmail.send is sensitive. Google describes a typical verification review of 3–5 business days; incomplete evidence and exceptions change that. Publishing is not the same as verification." : c.provider === "slack" ? "Use Slack's distribution checklist for external installs. A limited unlisted pilot and commercial distribution are different; check current Marketplace requirements and each workspace's admin controls." : "An Any workspace connection is eligible for Marketplace listing; Selected workspaces only is not. Listing is optional for OAuth use. Notion says to expect a response to a submitted listing within 5–10 business days; this is not a guaranteed approval.";
+  return step({title:"Separate a working test from launch",short:"Launch checks",action:gate(c),destination:"Read launch requirements",link:reviewSource(c),source:reviewSource(c),detail,
+    instructions:[c.audience === "test" ? "Keep this setup limited to the test account or workspace while you validate it." : "Record your intended external audience and data handling before requesting distribution.",
+      ...(c.managed ? ["Check the current toolkit FAQ and ask Composio whether your exact scopes and external audience are supported by the shared client."] : c.provider === "gmail" ? ["In Google Auth Platform → Branding, prepare your app homepage, privacy policy and authorized-domain details for public use.","In Data Access, review each requested scope and prepare its justification and a demonstration of the app's actual use.","Open Verification Center to check your applicable requirements. Review the submission yourself; do not treat changing Publishing status as verification."] : c.provider === "slack" ? ["Open your app's Manage Distribution → Share Your App with Other Workspaces. Complete its checklist before choosing Activate Public Distribution.","Check the current Slack Marketplace rules for commercial distribution; an unlisted pilot does not establish commercial approval."] : ["For optional Marketplace discovery, open Listings → Connections → Drafts → Start new connection listing.","Complete and save the listing details, then review before submitting. This is separate from testing your OAuth installation."]),
+      "Assign an owner to each applicable review, admin permission and policy requirement. Keep unresolved items visible."],
+    check:"You can explain which test passed, which reviews apply, and what remains blocked.",recovery:"A successful API call does not remove an approval requirement. Use the official review channel for an unresolved policy decision."});
+}
+function gmail(c:Context):Step[] {
+  const permission=`https://www.googleapis.com/auth/${scope(c)}`;
+  if(c.managed)return [
+    step({title:"Open the developer platform",short:"Choose project",action:"Start in your Composio project, not personal connections.",destination:"Open Composio dashboard",link:"https://dashboard.composio.dev/",source:sources.composioAuth,
+      instructions:["Sign in to Composio. If the top-left switch says For You, choose Switch → Platform.","Use Projects to select the project that will own this integration.","Open Auth Configs in the left sidebar, then Create. Choose Gmail."],check:"The Gmail auth-configuration form is open inside the intended project.",recovery:"If you see only personal connected apps, switch to Platform. If the project is missing, ask its owner for access."}),
+    step({title:"Create a narrowly scoped configuration",short:"Choose permissions",action:`Request ${scope(c)} for this task. Shared-client support still needs checking.`,destination:"Read Gmail compatibility notes",link:sources.gmailToolkit,source:sources.composioScopes,copyValue:permission,
+      instructions:["Enter a descriptive Config Name, such as fieldguide-gmail-test, then Next.","Keep OAuth 2.0 and choose Composio Managed.",`In Scopes, review and remove permissions not needed for this test. Enter ${permission}; use Add scope if it is not listed.`,"Check the selected list before creating the configuration. The form we inspected started with 11 scopes, including full mailbox access.","Create the configuration. On its detail page, confirm Managed and Enabled; save the Auth Config ID for your backend."],
+      detail:"Our browser test created a config with only gmail.readonly, but Google then blocked consent. A valid Gmail scope is not proof that the shared client can use it.",check:"The saved config uses managed credentials and its scope list matches your intended test.",recovery:"If Google blocks a narrowed scope, do not broaden mailbox access to work around it. Check the Gmail FAQ or use your own client."}),
+    step({title:"Connect the test account",short:"Review consent",action:"Creating an auth config has not connected a mailbox.",destination:"Open Composio dashboard",link:"https://dashboard.composio.dev/",source:sources.gmailToolkit,
+      instructions:["Return to Auth Configs and open the configuration you just created.","Choose Connect Account. In the Google chooser, select your dedicated test account.","Read the account and permissions on the consent screen before approving access.","If Google says This app is blocked, stop. Check Composio's Gmail FAQ and ask about this exact scope, or switch to your own OAuth app.","Only continue when Connected Accounts shows the intended account as active."],
+      detail:"Observed boundary: our read-only attempt was blocked by Google. No mailbox grant completed. This guide cannot promise that a different account or retry will resolve it.",check:"The connection is active for the correct test account, or you have recorded the consent block without marking this step done.",recovery:"Do not bypass a provider block. The FAQ separates shared-client scope restrictions from organization policy and custom-client setup."}),
+    step({title:c.intent === "read" ? "Read one known test message" : "Send one approved test message",short:"Test operation",action:"Use the connected account you just checked.",destination:"Open Gmail tool reference",link:sources.gmailToolkit,source:sources.gmailToolkit,
+      instructions:["In the same project, open Toolkits → Gmail. Search for the tool named below and open its Input schema.",c.intent === "read" ? "Use GMAIL_FETCH_EMAILS with user_id=me, max_results=1 and query=subject:fieldguide-test. Prepare that known message in your test mailbox first." : "Use GMAIL_SEND_EMAIL. Set recipient_email to an explicitly approved test address, subject to fieldguide-test, and body to a short approved test message.","The tool drawer has Execute Tool. Its post-connection controls were not verified in our walkthrough. Follow the current tool reference to choose your test connection and inspect the request before execution; sending is a real email.",c.intent === "read" ? "Confirm the returned message matches the known subject. Empty results do not prove this read test; check the mailbox and query." : "Confirm a message ID is returned and the approved recipient receives the message. A timeout is not proof of failure; check before resending."],
+      detail:"The tool list and fetch input schema were inspected in the dashboard. Execution controls after connection and actual operations remain unverified because Google blocked our connection.",check:c.intent === "read" ? "The known test message is returned from the intended mailbox." : "One approved message arrived at the test recipient; no duplicate was sent.",recovery:"For 401 reconnect the test account. For insufficient permissions compare the actual grant with the tool's requirements; do not add unrelated scopes."}),launch(c)
   ];
+  return [
+    step({title:"Create and select the right project",short:"Choose project",action:"Keep the walkthrough separate from existing production projects.",destination:"Open Google Cloud",link:"https://console.cloud.google.com/",source:sources.googleFlow,
+      instructions:["Open the project picker in Google Cloud's top bar → New project.","Enter a Project name and choose the intended Parent resource, or No organization when available. Create it.","Open the project picker again and select the new project. Creation may not switch the active project."],check:"The top bar shows your intended project name.",recovery:"If project creation is unavailable, ask the organization owner for project-creation access."}),
+    step({title:"Enable Gmail in this project",short:"Enable Gmail API",action:"Choose Gmail API, not Gmail MCP or Postmaster.",destination:"Open API Library",link:"https://console.cloud.google.com/apis/library",source:sources.googleFlow,
+      instructions:["With the intended project selected, open APIs & Services → Enable APIs and services.","Search Gmail API. Choose Gmail API — View and manage Gmail mailbox data.","Click Enable. Wait for its management page before continuing."],check:"Gmail API is listed under Enabled APIs & services for this project.",recovery:"If the API page stalls, reopen API Library and check the project picker. Do not enable a similarly named API."}),
+    step({title:"Set up the consent identity",short:"App identity",action:"This is the app name and contact users see when connecting.",destination:"Open Google Auth Platform",link:"https://console.cloud.google.com/auth/overview",source:sources.consent,
+      instructions:["Open Google Auth Platform → Get started. Enter App name and User support email, then Next.","Choose External for personal Gmail accounts or users outside your organization. Internal is only for an eligible Workspace organization.","Enter your contact email. At Finish, review the User Data Policy yourself; accept only if you agree, then Continue → Create."],
+      detail:"The browser walkthrough reached this policy agreement and stopped before acceptance. Later console steps are documented, not completed in our test.",check:"Branding and Audience are available in Google Auth Platform.",recovery:"Internal being disabled is expected for a project with no organization. Use External with named test users."}),
+    step({title:"Add the scope and your test user",short:"Scope & test user",action:"Keep the app in Testing while you validate the flow.",destination:"Open Google Auth Platform",link:"https://console.cloud.google.com/auth/overview",source:sources.consent,copyValue:permission,
+      instructions:["Open Data Access → Add or remove scopes. Add the exact scope below, then Update and Save.","Open Audience → Test users → Add users. Enter the dedicated Gmail test address and Save.","Confirm the app remains in Testing. Use the same account at consent."],
+      detail:c.intent === "read" ? "gmail.readonly is restricted; it allows mailbox reading. Do not add full mailbox access for this sample." : "gmail.send is sensitive and does not grant mailbox reading. A send test must not depend on reading the mailbox through the API.",check:"The requested scope is saved and the consenting account appears in Test users.",recovery:"For access_denied, first compare the login address with Test users and inspect organization restrictions."}),
+    step({title:"Register your backend callback",short:"Create client",action:"Your backend supplies the callback URL; Fieldguide does not host it.",destination:"Open OAuth clients",link:"https://console.cloud.google.com/auth/clients",source:sources.googleFlow,
+      instructions:["Choose a callback route on your backend, such as http://localhost:3000/auth/google/callback for local development. Implement that route before testing consent.","Open Clients → Create Client → Web application. Give the client a name.","Under Authorized redirect URIs, add that exact callback URL. Create the client.","Save the client ID and secret in your backend's environment or secret manager. Never put the secret in browser code or this guide."],
+      detail:"This route uses your independent backend. If you instead use your own credentials through Composio, copy the Redirect URI shown in Composio's Your Own Credentials form and register that value with Google.",check:"The saved client redirect URI exactly matches the route served by your backend.",recovery:"For redirect_uri_mismatch compare scheme, host, port, path and trailing slash. A JavaScript origin is not a callback URI."}),
+    step({title:"Implement consent and the callback",short:"Connect account",action:"Have your backend perform the code exchange with Google's library or protocol.",destination:"Open server-side OAuth example",link:sources.googleFlow,source:sources.googleFlow,actor:"Agent prepares · you connect",
+      instructions:[`Build a URL at https://accounts.google.com/o/oauth2/v2/auth with client_id, redirect_uri, response_type=code, scope=${permission}, access_type=offline and a fresh session-bound state.`,"Redirect your test user there. On return, reject errors or mismatched state before accepting the code.","POST form data to https://oauth2.googleapis.com/token with code, client_id, client_secret, redirect_uri and grant_type=authorization_code. Store returned tokens on the server.","Use Google's server-side library example below for refresh handling. Do not log tokens or expose them in the client."],check:"The correct test user consented; the backend exchanged the code and stored credentials securely.",recovery:"If consent is denied or blocked, inspect the error. Do not mark connection complete. An expired or reused code requires a new authorization attempt."}),
+    step({title:c.intent === "read" ? "Find a known message" : "Send one approved test message",short:"Test operation",action:"Test the actual task using the token from your callback.",destination:"Open operation reference",link:c.intent === "read" ? sources.gmailRead : sources.gmailSend,source:c.intent === "read" ? sources.gmailRead : sources.gmailSend,actor:"Agent prepares · you run",
+      instructions:c.intent === "read" ? ["Put a message with subject fieldguide-test in the test mailbox.","GET https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=1&q=subject%3Afieldguide-test with Authorization: Bearer YOUR_ACCESS_TOKEN.","Use the returned ID with GET https://gmail.googleapis.com/gmail/v1/users/me/messages/MESSAGE_ID?format=full and the same header to inspect the known message.","Confirm its subject and content. An empty messages list means the test fixture was not found."] : ["Choose an explicitly approved test recipient and message. Build an RFC 2822 message with To, Subject, a blank line, and body; encode it as base64url.","POST https://gmail.googleapis.com/gmail/v1/users/me/messages/send with Authorization: Bearer YOUR_ACCESS_TOKEN, Content-Type: application/json, and body {\"raw\":\"YOUR_BASE64URL_MESSAGE\"}.","Confirm the returned message ID and receipt in the test inbox. Do not add read scopes just to verify a send-only API test."],
+      check:c.intent === "read" ? "The known message's content matches the test fixture." : "The approved recipient received exactly one test message.",recovery:"For 403 check the enabled API and granted scope. For 401 refresh or reconnect. Check delivery before retrying an uncertain send."}),launch(c)
+  ];
+}
+function notion(c:Context):Step[] {return [
+  step({title:"Create a public OAuth connection",short:"Register connection",action:"Use a public connection for OAuth, including an OAuth test.",destination:"Open Notion developer portal",link:"https://app.notion.com/developers",source:sources.notion,
+    instructions:["Open the Notion developer portal. In Build, open Public connections → Create new connection.","Enter the connection name and development workspace. Add the redirect URI served by your backend.",c.audience === "public" ? "Choose Any workspace if external workspaces need to install it." : "Choose Selected workspaces only for a deliberately limited pilot, or Any workspace if this same connection will later serve other users.","Set Read content for this page-search sample. Save the connection."],detail:"Installation scope cannot be changed later. An internal connection token or personal access token is a different authentication route.",check:"The public connection exists with the intended installation scope and callback.",recovery:"If you created an internal token, return to Public connections. Do not describe a static token as OAuth."}),
+  step({title:"Prepare the server callback",short:"Client & callback",action:"Keep the client secret and resulting tokens on your backend.",destination:"Open authorization instructions",link:sources.notionAuth,source:sources.notionAuth,actor:"Agent prepares · you configure",
+    instructions:["In the connection's Configuration tab, retrieve the OAuth client ID and secret into server-side environment variables.","Implement the registered callback. Store a fresh random state tied to the signed-in application user's session.","Generate https://api.notion.com/v1/oauth/authorize with owner=user, response_type=code, client_id, redirect_uri and state. URL-encode parameter values."],check:"The backend serves the registered callback and verifies the state value it created.",recovery:"If the authorization URL is not available, check the connection's review status in the portal; do not invent an approval bypass."}),
+  step({title:"Let the user choose a test page",short:"Select pages",action:"Grant only the page needed for this test.",destination:"Read the page-picker flow",link:sources.notionAuth,source:sources.notionAuth,
+    instructions:["Create a harmless page called Fieldguide test in your test workspace.","Open the authorization URL generated by your backend. Confirm the workspace and requested capabilities.","Use the page picker to select Fieldguide test, then approve if the grant is correct.","At your callback, verify state and take the short-lived code from the redirect."],check:"Your callback received a code for the intended user and selected page.",recovery:"If the workspace is unavailable, check the connection's installation scope and workspace admin policy."}),
+  step({title:"Exchange the code securely",short:"Get token",action:"The callback code is not an API token.",destination:"Open token reference",link:sources.notionToken,source:sources.notionToken,actor:"Agent prepares · you run",
+    instructions:["From the server, POST https://api.notion.com/v1/oauth/token with Content-Type: application/json and HTTP Basic authentication using the client ID and secret.","Send grant_type=authorization_code, the returned code, and the same redirect_uri used at authorization.","Store the returned access_token and refresh_token securely under the signed-in app user. Keep the returned workspace identity with that connection."],check:"The token response belongs to the expected connection and workspace.",recovery:"For invalid_grant, restart consent with a fresh code; check the redirect URI and client credentials."}),
+  step({title:"Find the page you shared",short:"Test page search",action:"Search returns shared page titles, not every page in a workspace.",destination:"Open search reference",link:sources.notionSearch,source:sources.notionSearch,
+    instructions:["POST https://api.notion.com/v1/search with Authorization: Bearer YOUR_ACCESS_TOKEN, Content-Type: application/json and Notion-Version: 2026-03-11.","Send {\"query\":\"Fieldguide test\",\"filter\":{\"property\":\"object\",\"value\":\"page\"},\"page_size\":10}.","Check results for the exact test page title and ID. Confirm an unshared private page is absent."],check:"The selected test page appears. You have not claimed access to all workspace pages.",recovery:"For empty results, check the page picker grant and exact title; newly shared content can take time to appear."}),launch(c)
+];}
+function slack(c:Context):Step[] {return [
+  step({title:"Create an app in the test workspace",short:"Create app",action:"Start with a workspace where you can install apps.",destination:"Open Slack app settings",link:"https://api.slack.com/apps",source:sources.slackCreate,
+    instructions:["Open the app creation flow, select Blank app, then Continue.","Enter an App Name and select the intended development workspace, then Create.","Open OAuth & Permissions. Under Bot Token Scopes, add chat:write."],check:"The app belongs to your intended workspace and requests chat:write as a bot permission.",recovery:"If creation or installation is restricted, ask that workspace's admin. Adding scopes will not bypass the restriction."}),
+  ...(c.audience === "public" ? [step({title:"Register your external install callback",short:"OAuth callback",action:"External installations need a backend OAuth flow.",destination:"Open Slack OAuth instructions",link:sources.slack,source:sources.slack,actor:"Agent prepares · you configure",
+    instructions:["In OAuth & Permissions → Redirect URLs, add your backend's HTTPS callback and save it.","Generate https://slack.com/oauth/v2/authorize with client_id, scope=chat:write, redirect_uri and a fresh session-bound state.","On callback, verify state. POST form data to https://slack.com/api/oauth.v2.access with code, redirect_uri, client_id and client_secret.","Check ok=true and save the bot token for the returned team ID. Keep client secrets and tokens server-side."],check:"Each installation is associated with its actual workspace; the redirect matches in both requests.",recovery:"For bad_redirect_uri compare the saved URL and both requests. Denied installs need the workspace admin."})] : []),
+  step({title:"Install the app into the workspace",short:"Install app",action:"Review the workspace and bot permission before allowing it.",destination:"Open Slack app settings",link:"https://api.slack.com/apps",source:sources.distribution,
+    instructions:c.audience === "test" ? ["Open your app → OAuth & Permissions → Install to Workspace.","Check the workspace and permission, then approve if appropriate.","Store the Bot User OAuth Token shown under OAuth & Permissions securely on your backend."] : ["For the development workspace, use Install App in app settings to validate the bot first.","For external workspaces, complete Slack's distribution requirements before sending an install URL.","Use your callback flow to store a separate token per workspace."],check:"The bot is installed in the test workspace and its token is stored server-side.",recovery:"If approval is required, wait for the admin rather than assuming user consent is sufficient."}),
+  step({title:"Give the bot a test channel",short:"Choose channel",action:"chat:write does not grant access to every channel.",destination:"Read channel requirements",link:sources.slackPost,source:sources.slackPost,
+    instructions:["Choose a dedicated test channel in Slack. Invite your app to that channel.","Open the channel's details and copy its channel ID for the test request.","Confirm the channel and exact message with the person authorizing the test."],check:"The bot is a member of the intended test channel and the channel ID is recorded.",recovery:"For not_in_channel, add the bot to the channel. Do not add chat:write.public just to avoid channel setup."}),
+  step({title:"Post one approved test message",short:"Test message",action:"This request creates a real Slack message.",destination:"Open message reference",link:sources.slackPost,source:sources.slackPost,
+    instructions:["After approving the target and content, POST https://slack.com/api/chat.postMessage with Authorization: Bearer YOUR_BOT_TOKEN and Content-Type: application/json.","Send {\"channel\":\"YOUR_TEST_CHANNEL_ID\",\"text\":\"Fieldguide connection test\"}.","Check ok=true plus channel and ts in the response; verify the message in the test channel."],check:"One intended message appeared in the correct workspace and channel.",recovery:"Slack can return HTTP 200 with ok=false. Read the error; check membership or scope before retrying."}),launch(c)
+];}
+export function getSteps(c:Context):Step[] {
+  if(c.managed && c.provider !== "gmail")return [step({title:"Research this managed route",short:"Current managed setup",action:"Get current toolkit-specific permissions and connection steps.",destination:"Research managed setup",link:`/research?app=${c.provider}&task=${encodeURIComponent(operation(c))}&audience=${c.audience}&auth=managed`,source:sources.composioAuth,instructions:["Open live research for this provider's managed route. The own-app sample does not apply to managed credentials."],check:"A sourced managed-auth guide is available.",recovery:"If support cannot be established, keep that finding visible and consider your own app."})];
+  return c.provider === "gmail" ? gmail(c) : c.provider === "notion" ? notion(c) : slack(c);
 }

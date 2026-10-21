@@ -63,7 +63,19 @@ See `unfamiliar-app-evaluation.md` for live successes, failures, timings and rem
 
 - Complete managed consent only with user approval for the exact account and permissions; run a controlled operation without sending email.
 - Continue own-app Google Auth Platform setup, recording any legal agreement or credential handoff as a real boundary.
-- Rebuild the UI and curated instructions from these findings; current production still has the earlier generic five-step guides.
+- The curated rebuild is implemented locally and browser-checked; deploy only after the remaining acceptance checks. Production still has the earlier generic guides.
 - Improve evidence gathering and generation for unfamiliar apps. Test fresh apps with varied provider models, ambiguous names, missing OAuth support and missing policy evidence. Inspect destinations and actionability, not just JSON validity.
 
 Source brief: https://composio.notion.site/APM-Integrations-Take-home-Assignment-3f9f261a6dfe81489ee5e3643151f9d6
+
+## Implemented curated slice and UI checks
+
+The local examples are now Gmail, Slack and Notion, with genuine bundled brand marks. Gmail has separate five-step managed and eight-step independent-own-client routes. The managed guide reports the observed Google consent block before the user starts. The own-client guide covers project selection, API enablement, app identity, scopes/test users, client registration, state/callback and token exchange, a task-matching operation, and launch checks.
+
+Slack separates a development workspace installation from external OAuth distribution. Notion uses a public OAuth connection with explicit page selection, not an internal token. Its current developer portal is `https://app.notion.com/developers`. Slack/Notion account setups remain documentation-based, not browser-completed.
+
+The overview separates difficulty, planning estimates, published approval waits, prerequisites, agent preparation and human consent. Numbered actions and a success check are visible by default; the illustration and troubleshooting are secondary. Gmail permissions can be copied. Launch checks now give provider-specific navigation. Managed Slack/Notion requests use live research instead of recycling own-client instructions.
+
+Browser checks on localhost: Gmail managed configuration/scope copy feedback, own-app eight-step navigation and callback instructions, last-step launch content, overview, share-link dialog and copied feedback, and Notion route/brand. At 390 × 844 the document had no horizontal overflow and enabled buttons used pointer cursors. Desktop keeps instruction-panel scrolling and a visible action footer. No provider operation is inferred from checklist clicks. Screenshot: `.data/walkthrough/rebuilt-gmail-instructions.jpg`.
+
+Additional managed dashboard inspection reached Toolkits → Gmail → GMAIL_FETCH_EMAILS → Input schema. Observed `user_id`, `query`, `max_results`, payload and other fields, plus Execute Tool. We did not click Execute Tool or verify its post-connection controls. The guide now states this boundary rather than inventing the next screen. No mailbox read or send occurred.

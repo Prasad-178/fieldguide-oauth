@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { POST } from '../src/app/api/research/route';
+import { ResearchError } from '../src/lib/research/openrouter';
 
 process.env.OPENROUTER_API_KEY='test-only-provider-key';
 process.env.GUIDE_SIGNING_SECRET='test-only-signing-key-not-a-real-secret-12345';
@@ -58,4 +59,15 @@ test('an already cancelled request never starts paid research',async t=>{
  const controller=new AbortController();controller.abort();
  const response=await POST(request(input,{signal:controller.signal}));
  assert.equal(response.status,499);assert.equal(calls,0);
+});
+
+
+test('detailed validation diagnostics stay out of API responses and server logs',async t=>{
+ const logged:unknown[]=[];
+ t.mock.method(console,'error',(...args:unknown[])=>{logged.push(args);});
+ t.mock.method(globalThis,'fetch',async()=>{throw new ResearchError('No guide was published.',502,{code:'guide_validation_failed',stage:'guide',checks:['PRIVATE_INPUT_IN_DIAGNOSTIC']});});
+ const response=await POST(request());
+ assert.doesNotMatch(await response.text(),/PRIVATE_INPUT/);
+ assert.doesNotMatch(JSON.stringify(logged),/PRIVATE_INPUT/);
+ assert.match(JSON.stringify(logged),/guide_validation_failed/);
 });
