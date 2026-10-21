@@ -2,7 +2,7 @@
 
 Find the next step in OAuth setup. Choose a Gmail, Slack or Notion sample, or research another app by name or website. Guides separate setup work, a controlled connection test, and external launch requirements.
 
-Live: **https://fieldguide-oauth.vercel.app** · [Source repository](https://github.com/Prasad-178/fieldguide-oauth) (currently private; reviewers need access).
+Live: **https://fieldguide-oauth.vercel.app** · [Source repository](https://github.com/Prasad-178/fieldguide-oauth) (public).
 
 Built for the Composio APM integrations take-home with Next.js, React, TypeScript, shadcn/Radix, Tailwind, Motion and OpenRouter.
 
@@ -85,7 +85,7 @@ Read [the validation report](docs/validation.md), [developer UX research](docs/d
 - This is a focused take-home, not a complete 100-provider library or production OAuth platform.
 - Pages may be inaccessible, incomplete or changed; task-relevant excerpts may omit context. The reader does not execute JavaScript and currently requires public IPv4. Model source selection and review can still be wrong. Citations do not prove correctness.
 - Live research is nondeterministic. Recorded successful examples are evidence of those runs, not a pass rate.
-- A dedicated Gmail managed auth configuration and Google Cloud test project were created during the browser walkthrough. Google blocked the managed read-only consent attempt; own-app identity, scope and test user are saved, and Gmail API is enabled. The web OAuth client was created, its credentials saved privately outside this repository, and its local callback reached the exact read-only Google consent screen. No mailbox grant, token exchange, mailbox operation or public approval was completed.
+- A dedicated Gmail managed auth configuration and Google Cloud test project were created during the browser walkthrough. Google blocked the managed read-only consent attempt; own-app identity, scope and test user are saved, and Gmail API is enabled. The own-app flow completed read-only consent, PKCE authorization-code exchange and Gmail messages.list/messages.get against an unsent test draft. The subject matched and message content was returned. No email was sent. Client credentials remain outside this repository; no refresh token or public approval was requested.
 - Sample guidance is dated 21 October 2026. Generated guides show their own timestamps; neither updates automatically after sharing.
 - In-process limits allow six research requests per IP per 15 minutes and two active requests per server instance. They are not a durable global quota. The deployed Vercel project also has a published firewall rule limiting POST /api/research to six requests per IP per 15 minutes. Tool/output caps reduce individual request cost; they do not impose an account spending cap.
 - Cancellation aborts the local provider request, but cannot guarantee that already-started provider work stops or is unbilled.

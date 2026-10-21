@@ -1,6 +1,6 @@
 # Unfamiliar-app evaluation — 21 October 2026
 
-Status: research pipeline improved locally; **not a blanket readiness verdict**. Nothing deployed or submitted in this rebuild. Gmail/Slack/Notion sample instructions are rebuilt locally; account walkthroughs remain incomplete.
+Current status: the rebuilt app is deployed and source is public. Own-app Gmail consent, token exchange and test-draft retrieval succeeded. Full GPT-5.4 unfamiliar-app acceptance remains blocked by provider credit errors; see the latest checkpoint below and readiness-review.md. Earlier sections are a chronological record, not the current deployment/model status. No assignment submission has occurred.
 
 ## What changed
 

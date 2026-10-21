@@ -13,9 +13,9 @@ https://composio.notion.site/APM-Integrations-Take-home-Assignment-3f9f261a6dfe8
 | A few varied apps | Gmail (managed and own), Slack (workspace/distribution), Notion (public OAuth and page selection) | Slack/Notion remain documentation-based, not completed account setups |
 | Unfamiliar apps live | Search, direct primary-page retrieval, link following, structured guide and source review; full GPT-5.4 now the default | Current stronger-model acceptance is incomplete; no canned fallback is used |
 | Useful setup and launch guidance | Visible ordered actions, destinations, success/recovery checks, effort/waiting, prerequisites and agent/human summary | Source-backed instructions can still be wrong; reviewers should inspect citations |
-| Practical investigation | Gmail managed configuration created, consent blocked; own Google project/API/identity/scope/test user/client created and local read-only consent reached | No mailbox grant, token exchange or mailbox operation claimed |
+| Practical investigation | Gmail managed configuration created, consent blocked; own Google project/API/identity/scope/test user/client created, consent and token exchange completed, known test draft retrieved through Gmail API | Read fixture was an unsent draft; no send, refresh-token or public-approval test |
 | Repeatability and evidence | 58 automated tests; lint/build/diff check; history secret scan; production dependency audit reports zero findings | Nine high findings remain in development tooling; no forced breaking dependency changes applied |
-| Source and README | Private GitHub repository with setup instructions, decisions and limits | Authorize public source access or supply reviewer identities for an invitation |
+| Source and README | Public GitHub repository with setup instructions, decisions and limits; anonymous GitHub API confirms private=false | Source access complete |
 | Submission | Form confirmed: one file, max 10 MB; short PDF draft prepared locally | No upload, form submission or email sent |
 
 ## Model and reliability decisions
@@ -24,7 +24,7 @@ The user requested a stronger model. Default/local configuration is now `openai/
 
 Relative links in Markdown documentation are now resolved before link following. Managed research reads four current Composio session/authentication references. Documented SDK instructions cannot use an undefined Composio client/session or mix Python and TypeScript result fields. Product identity is distinguished from missing SDK/protocol documentation.
 
-OpenRouter returned HTTP 402 during the final Todoist and Asana reviews. A subsequent read-only account check showed approximately $1.25 remaining, so this is insufficient credit for the requested work, not a verified zero balance. No new paid trials were started after that finding. Do not present partial requests as completed guides.
+OpenRouter returned HTTP 402 during the final Todoist and Asana reviews. A subsequent read-only account check showed approximately $1.15 remaining on the latest check, so this is insufficient credit for the requested work, not a verified zero balance. No new paid trials were started after that finding. Do not present partial requests as completed guides.
 
 ## Deployed revision
 
@@ -35,6 +35,6 @@ The public domain resolves to the rebuilt deployment. Preview protection remains
 
 1. Restore sufficient OpenRouter credits. Run one complete unfamiliar own-app guide and one managed guide; inspect every critical instruction, not just status/JSON.
 2. Exercise a generated guide's share/verification flow on production and check the model/run details.
-3. Confirm source access, update the PDF with the final evidence, upload it to https://forms.gle/ELMyW4DF2pp8yT7k9 and submit only the complete package.
+3. Source access is confirmed. Update the PDF with the final evidence, upload it to https://forms.gle/ELMyW4DF2pp8yT7k9 and submit only the complete package.
 
-The Gmail mailbox grant is optional additional walkthrough evidence, not required by the brief. It remains at Google's explicit read-only consent screen. The local harness requests no refresh token and does not read mail automatically; the account owner can decline without preventing submission.
+The Gmail own-app walkthrough is now complete for the tested read-only operation. After explicit user approval, Google consent and the local PKCE token exchange succeeded. An unsent draft with subject `fieldguide-test` was created through the existing Gmail connector, then retrieved by the independent local OAuth client using messages.list and messages.get. The result confirmed a matching subject and returned content, without logging message text, IDs or tokens. No email was sent, and no refresh token was requested. This does not verify sending, external-user approval, refresh handling or the blocked managed-client route.

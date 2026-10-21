@@ -1,3 +1,5 @@
+<!-- This is a chronological investigation log. Later checkpoints supersede earlier pending states. -->
+
 # Walkthrough-driven rebuild — 21 October 2026
 
 ## Why this work is necessary
@@ -115,3 +117,16 @@ With the user's approval, Create displayed **OAuth client created**. Download JS
 The local test exposed two browser-specific harness issues: a stale session/strict-origin rejection and a CSP that blocked the intended redirect to Google. The harness retains Host and Origin checks, uses a same-origin referrer policy, and allows form redirects only to itself and accounts.google.com. A fresh browser run then reached account selection, the developer test-app notice and the exact permission screen: **View your email messages and settings**. Consent has not been granted, and token exchange/mailbox reading are not claimed.
 
 This checkpoint verifies client creation and the authorization request, not the completed mailbox flow. The managed route remains blocked by Google for the tested shared-client read scope.
+
+
+## Completed own-app read test - 21 October 2026
+
+The user explicitly approved the read-only grant for the local walkthrough app and named account. Google consent completed, the local callback exchanged the code using PKCE, and the home page confirmed token exchange without an automatic mailbox read.
+
+Created one unsent draft with subject `fieldguide-test` through the existing Gmail connector, with no recipient and no signature. The local client then performed `GET /gmail/v1/users/me/messages` with `maxResults=1` and `q=subject:fieldguide-test`, followed by `GET /gmail/v1/users/me/messages/{id}?format=full`. The result displayed **Subject matched: yes** and **Message content returned: yes**. The harness does not compare the complete body byte-for-byte; this verifies retrieval and payload presence, not exact body fidelity. No email was sent.
+
+Evidence screenshot: `.data/walkthrough/google-readonly-success.jpg` (kept local). OAuth tokens stayed in process memory; the client JSON stayed outside the repository. Stopping the harness clears local tokens but does not revoke Google's grant. The unsent fixture remains in Drafts.
+
+This verifies the own-app testing route for a named test user, not production verification, refresh-token handling, email sending, or the Composio managed route. The latter remains blocked by Google for the tested shared-client scope.
+
+The source repository was made public with explicit user approval, and an unauthenticated GitHub API read confirmed `private=false`.
